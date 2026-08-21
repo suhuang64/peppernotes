@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+
+  
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#fcfcfb" media="(prefers-color-scheme: light)" id="tc-light">
+  <meta name="theme-color" content="#171715" media="(prefers-color-scheme: dark)" id="tc-dark">
+
+  <script>
+    (function () {
+      var root = document.documentElement;
+      var key  = 'idyll-theme';
+
+      root.classList.add('js');
+
+      var saved = null;
+      try { saved = localStorage.getItem(key); } catch (err) {}
+
+      var tcLight = document.getElementById('tc-light');
+      var tcDark  = document.getElementById('tc-dark');
+      var colors  = { light: '#fcfcfb', dark: '#171715' };
+
+      function syncChrome(mode) {
+        if (tcLight && tcDark) {
+          var c = colors[mode] || null;
+          tcLight.content = c || '#fcfcfb';
+          tcDark.content  = c || '#171715';
+        }
+      }
+
+      if (saved === 'light' || saved === 'dark') {
+        root.setAttribute('data-theme', saved);
+        syncChrome(saved);
+      }
+
+      function wire() {
+        var btn = document.getElementById('theme');
+        if (!btn) return;
+
+        var state = document.getElementById('theme-state');
+
+        function paint(mode) {
+          if (mode) root.setAttribute('data-theme', mode);
+          else root.removeAttribute('data-theme');
+
+          if (state) state.textContent = btn.getAttribute('data-' + (mode || 'auto'));
+
+          syncChrome(mode);
+
+          try {
+            if (mode) localStorage.setItem(key, mode);
+            else localStorage.removeItem(key);
+          } catch (err) {}
+
+          
+          document.dispatchEvent(new CustomEvent('idyll:theme', { detail: mode || 'auto' }));
+        }
+
+        btn.addEventListener('click', function () {
+          var cur     = root.getAttribute('data-theme') || '';
+          var sysDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+          if (cur === '') paint(sysDark ? 'light' : 'dark');
+          else if (cur === 'light') paint('dark');
+          else paint('');
+        });
+
+        paint(root.getAttribute('data-theme') || '');
+      }
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', wire);
+      } else {
+        wire();
+      }
+    })();
+  </script>
+
+  <title>Scikit-Learn 参数调优和评估 · 辣椒手记</title>
+  <meta name="description" content="在机器学习的实践中，选择一个合适的模型只是冰山一角。即使选择了正确的模型，如果不对其进行适当的参数调优，那么模型的性能可能会大打折扣。参数调优对于模型的最终表现起到关键的作用。Sklearn，作为一个广泛使用的Python机器学习库，为我们提供了一系列强大的工具，如GridSearchCV 和 Ra…">
+  <meta name="author" content="辣椒小皇纸">
+  
+
+  <meta name="description" content="在机器学习的实践中，选择一个合适的模型只是冰山一角。即使选择了正确的模型，如果不对其进行适当的参数调优，那么模型的性能可能会大打折扣。参数调优对于模型的最终表现起到关键的作用。Sklearn，作为一个广泛使用的Python机器学习库，为我们提供了一系列强大的工具，如GridSearchCV 和 Ra…">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Scikit-Learn 参数调优和评估 · 辣椒手记">
+<meta property="og:url" content="https://peppernotes.top/2023/08/sklearn-paramenter-tune/index.html">
+<meta property="og:site_name" content="辣椒手记">
+<meta property="og:description" content="在机器学习的实践中，选择一个合适的模型只是冰山一角。即使选择了正确的模型，如果不对其进行适当的参数调优，那么模型的性能可能会大打折扣。参数调优对于模型的最终表现起到关键的作用。Sklearn，作为一个广泛使用的Python机器学习库，为我们提供了一系列强大的工具，如GridSearchCV 和 Ra…">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2023-08-11T16:06:00.000Z">
+<meta property="article:modified_time" content="2023-08-11T16:06:00.000Z">
+<meta property="article:author" content="辣椒小皇纸">
+<meta property="article:tag" content="Python">
+<meta property="article:tag" content="Scikit-Learn">
+<meta property="article:tag" content="交叉验证">
+<meta property="article:tag" content="机器学习">
+<meta property="article:tag" content="模型评估">
+<meta property="article:tag" content="超参数调优">
+<meta name="twitter:card" content="summary">
+  
+  <link rel="canonical" href="https://peppernotes.top/2023/08/sklearn-paramenter-tune/">
+  <link rel="icon" href="/images/favicon.svg" type="image/svg+xml">
+  
+
+  <link rel="stylesheet" href="/css/style.css">
+  
+
+<meta name="generator" content="Hexo 8.1.2"></head>
+
+<body data-idyll="copy anchor ext toc shortcut"
+      data-copy="复制"
+      data-copied="已复制"
+      data-copyfail="请按 Ctrl+C"
+      data-anchor="链接到这一节">
+
+  
+    <div class="progress" id="progress" aria-hidden="true"><i></i></div>
+  
+
+  <a class="skip" href="#main">跳到正文</a>
+
+  <header class="nav" id="nav">
+  <div class="wrap nav__in">
+    <a class="nav__brand" href="/">
+      <span class="nav__mark" aria-hidden="true"></span>
+      <span class="nav__name">辣椒手记</span>
+    </a>
+
+    <div class="nav__right">
+      <nav class="nav__links" aria-label="站点导航">
+        
+          <a class="nav__link"
+             href="/">首页</a>
+        
+          <a class="nav__link"
+             href="/archives/">归档</a>
+        
+          <a class="nav__link"
+             href="/categories/">分类</a>
+        
+          <a class="nav__link"
+             href="/tags/">标签</a>
+        
+          <a class="nav__link"
+             href="/series/">系列</a>
+        
+          <a class="nav__link"
+             href="/about/">关于</a>
+        
+      </nav>
+
+      
+        
+        <button class="theme" id="theme" type="button"
+                data-auto="跟随系统"
+                data-light="亮色"
+                data-dark="暗色">
+          <svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true" focusable="false">
+            <g class="theme__ico theme__ico--auto">
+              <circle cx="8" cy="8" r="5.6" fill="none" stroke="currentColor" stroke-width="1.4"/>
+              <path d="M8 2.4a5.6 5.6 0 0 0 0 11.2z" fill="currentColor"/>
+            </g>
+            <g class="theme__ico theme__ico--light"
+               fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round">
+              <circle cx="8" cy="8" r="3.1"/>
+              <path d="M8 1.3v1.3M8 13.4v1.3M14.7 8h-1.3M2.6 8H1.3M12.74 3.26l-.92.92M4.18 11.82l-.92.92M12.74 12.74l-.92-.92M4.18 4.18l-.92-.92"/>
+            </g>
+            <g class="theme__ico theme__ico--dark">
+              <path d="M14 8.53A6 6 0 1 1 7.47 2 4.67 4.67 0 0 0 14 8.53z"
+                    fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
+            </g>
+          </svg>
+          
+          <span class="sr-only" id="theme-state" aria-live="polite">跟随系统</span>
+        </button>
+      
+    </div>
+  </div>
+</header>
+
+
+  <main class="main" id="main">
+
+<article class="post">
+  <header class="wrap post__head">
+    
+      <p class="post__kicker">
+        <a href="/categories/%E6%95%B0%E6%8D%AE%E7%A7%91%E5%AD%A6/">数据科学</a><span class="sep">/</span><a href="/categories/%E6%95%B0%E6%8D%AE%E7%A7%91%E5%AD%A6/%E6%9C%BA%E5%99%A8%E5%AD%A6%E4%B9%A0/">机器学习</a>
+      </p>
+    
+
+    <h1 class="post__title">Scikit-Learn 参数调优和评估</h1>
+
+    <div class="post__meta">
+      
+      <time datetime="2023-08-11T16:06:00.000Z"><span class="sr-only">发布于 </span>2023-08-12</time>
+      
+        <span class="dot" aria-hidden="true">·</span>
+        <span>2,052 字</span>
+      
+      
+        <span class="dot" aria-hidden="true">·</span>
+        <span>7 分钟</span>
+      
+      
+    </div>
+  </header>
+
+  
+<nav class="toc" aria-label="目录">
+  <p class="toc__label">目录</p>
+  <ol class="toc__list">
+    
+      <li>
+        <a class="toc__link" href="#1-决策树模型的参数调优和评估" data-toc-id="1-决策树模型的参数调优和评估" title="1. 决策树模型的参数调优和评估">1. 决策树模型的参数调优和评估</a>
+        
+          <ol class="toc__list toc__list--sub">
+            
+              <li><a class="toc__link toc__link--sub" href="#1-1-GridSearchCV" data-toc-id="1-1-GridSearchCV" title="1.1 GridSearchCV">1.1 GridSearchCV</a></li>
+            
+              <li><a class="toc__link toc__link--sub" href="#1-2-RandomizedSearchCV" data-toc-id="1-2-RandomizedSearchCV" title="1.2 RandomizedSearchCV">1.2 RandomizedSearchCV</a></li>
+            
+          </ol>
+        
+      </li>
+    
+      <li>
+        <a class="toc__link" href="#2-随机森林模型的参数调优和评估" data-toc-id="2-随机森林模型的参数调优和评估" title="2. 随机森林模型的参数调优和评估">2. 随机森林模型的参数调优和评估</a>
+        
+      </li>
+    
+      <li>
+        <a class="toc__link" href="#总结" data-toc-id="总结" title="总结">总结</a>
+        
+      </li>
+    
+  </ol>
+</nav>
+
+
+  <div class="wrap prose" id="content"><p>在机器学习的实践中，选择一个合适的模型只是冰山一角。即使选择了正确的模型，如果不对其进行适当的参数调优，那么模型的性能可能会大打折扣。参数调优对于模型的最终表现起到关键的作用。Sklearn，作为一个广泛使用的Python机器学习库，为我们提供了一系列强大的工具，如<code>GridSearchCV</code> 和 <code>RandomizedSearchCV</code>，帮助我们系统地进行参数调优。但是，如何有效地使用这些工具进行参数调优和模型评估呢？在本文中，我们将深入探讨这些问题，并为读者提供一些实践建议。</p>
+<span id="more"></span>
+
+<h2 id="1-决策树模型的参数调优和评估"><a href="#1-决策树模型的参数调优和评估" class="headerlink" title="1. 决策树模型的参数调优和评估"></a>1. 决策树模型的参数调优和评估</h2><h3 id="1-1-GridSearchCV"><a href="#1-1-GridSearchCV" class="headerlink" title="1.1 GridSearchCV"></a>1.1 GridSearchCV</h3><p>对于决策树模型的参数调优和评估，可以使用scikit-learn提供的交叉验证（Cross-validation）和网格搜索（GridSearch）工具。以下是具体的步骤：</p>
+<ol>
+<li><p><strong>定义参数网格</strong>:<br>为每个参数定义一组值来进行尝试。例如：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">param_grid = &#123;</span><br><span class="line">    <span class="string">&#x27;criterion&#x27;</span>: [<span class="string">&quot;squared_error&quot;</span>, <span class="string">&quot;friedman_mse&quot;</span>, <span class="string">&quot;absolute_error&quot;</span>, <span class="string">&quot;poisson&quot;</span>],</span><br><span class="line">    <span class="string">&#x27;splitter&#x27;</span>: [<span class="string">&#x27;best&#x27;</span>, <span class="string">&#x27;random&#x27;</span>],</span><br><span class="line">    <span class="string">&#x27;max_depth&#x27;</span>: [<span class="literal">None</span>, <span class="number">10</span>, <span class="number">20</span>, <span class="number">30</span>],</span><br><span class="line">    <span class="string">&#x27;min_samples_split&#x27;</span>: [<span class="number">2</span>, <span class="number">5</span>, <span class="number">10</span>],</span><br><span class="line">    <span class="string">&#x27;min_samples_leaf&#x27;</span>: [<span class="number">1</span>, <span class="number">2</span>, <span class="number">4</span>],</span><br><span class="line">    <span class="string">&#x27;max_features&#x27;</span>: [<span class="literal">None</span>, <span class="string">&#x27;auto&#x27;</span>, <span class="string">&#x27;sqrt&#x27;</span>, <span class="string">&#x27;log2&#x27;</span>]</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p><strong>初始化模型</strong>:</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> sklearn.tree <span class="keyword">import</span> DecisionTreeRegressor</span><br><span class="line">dt = DecisionTreeRegressor()</span><br></pre></td></tr></table></figure>
+</li>
+<li><p><strong>使用交叉验证的网格搜索</strong>:<br>使用 <code>GridSearchCV</code> 来进行网格搜索和交叉验证。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> sklearn.model_selection <span class="keyword">import</span> GridSearchCV</span><br><span class="line"></span><br><span class="line">grid_search = GridSearchCV(estimator=dt, param_grid=param_grid, </span><br><span class="line">                           cv=<span class="number">5</span>, n_jobs=-<span class="number">1</span>, verbose=<span class="number">2</span>)</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><code>cv=5</code> 指定了5折交叉验证。</li>
+<li><code>n_jobs=-1</code> 表示使用所有可用的CPU核心。</li>
+<li><code>verbose=2</code> 表示过程中显示详细信息。</li>
+</ul>
+</li>
+<li><p><strong>拟合数据</strong>:<br>使用 <code>grid_search</code> 对象来拟合你的数据。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">grid_search.fit(X_train, y_train)</span><br></pre></td></tr></table></figure>
+</li>
+<li><p><strong>查看最佳参数</strong>:<br>完成拟合后，你可以查看为模型找到的最佳参数组合。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">best_params = grid_search.best_params_</span><br><span class="line"><span class="built_in">print</span>(best_params)</span><br></pre></td></tr></table></figure>
+</li>
+<li><p><strong>使用最佳模型</strong>:<br>使用网格搜索找到的最佳参数训练的模型可以直接从 <code>grid_search</code> 获取。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">best_dt = grid_search.best_estimator_</span><br></pre></td></tr></table></figure>
+</li>
+<li><p><strong>预测和评估</strong>:<br>使用此最佳模型进行预测并评估其性能。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">y_pred = best_dt.predict(X_test)</span><br></pre></td></tr></table></figure></li>
+</ol>
+<p><strong>注意事项</strong>:</p>
+<ul>
+<li>网格搜索可能会耗费很长时间，尤其是当参数网格较大或数据集较大时。因此，从一个较小的参数网格开始，然后根据初步的结果进一步细化可能是一个好策略。    </li>
+<li>如果你希望更随机地搜索参数空间，而不是尝试所有的参数组合，可以考虑使用 <code>RandomizedSearchCV</code>。这个方法会从每个参数的分布中随机采样，并可能更快地找到一个不错的参数组合。</li>
+<li>使用交叉验证的好处是你可以得到模型在不同子集上的性能评估，这有助于检测模型是否过拟合并提供了对模型泛化能力的更全面的估计。</li>
+</ul>
+<h3 id="1-2-RandomizedSearchCV"><a href="#1-2-RandomizedSearchCV" class="headerlink" title="1.2 RandomizedSearchCV"></a>1.2 RandomizedSearchCV</h3><p><code>RandomizedSearchCV</code> 是一种用于超参数调优的方法，它不尝试参数网格中的所有参数组合，而是从参数网格中随机抽样固定数量的参数组合。这种方法可能更快地找到一个不错的参数组合，特别是当参数空间很大时。</p>
+<p>以下是使用 <code>RandomizedSearchCV</code> 的步骤：</p>
+<ol>
+<li><p><strong>定义参数分布</strong>:<br>与 <code>GridSearchCV</code> 不同，可以为参数定义一个分布而不是明确的值列表。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> scipy.stats <span class="keyword">import</span> randint</span><br><span class="line"></span><br><span class="line">param_dist = &#123;</span><br><span class="line">    <span class="string">&#x27;criterion&#x27;</span>: [<span class="string">&quot;squared_error&quot;</span>, <span class="string">&quot;friedman_mse&quot;</span>, <span class="string">&quot;absolute_error&quot;</span>, <span class="string">&quot;poisson&quot;</span>],</span><br><span class="line">    <span class="string">&#x27;splitter&#x27;</span>: [<span class="string">&#x27;best&#x27;</span>, <span class="string">&#x27;random&#x27;</span>],</span><br><span class="line">    <span class="string">&#x27;max_depth&#x27;</span>: [<span class="literal">None</span>] + <span class="built_in">list</span>(randint(<span class="number">1</span>, <span class="number">20</span>).rvs(<span class="number">10</span>)),  <span class="comment"># None加上10个随机整数值在1到20之间</span></span><br><span class="line">    <span class="string">&#x27;min_samples_split&#x27;</span>: randint(<span class="number">2</span>, <span class="number">10</span>),  <span class="comment"># 2到10之间的整数分布</span></span><br><span class="line">    <span class="string">&#x27;min_samples_leaf&#x27;</span>: randint(<span class="number">1</span>, <span class="number">10</span>)   <span class="comment"># 1到10之间的整数分布</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p><strong>初始化模型</strong>:</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> sklearn.tree <span class="keyword">import</span> DecisionTreeRegressor</span><br><span class="line">dt = DecisionTreeRegressor()</span><br></pre></td></tr></table></figure>
+</li>
+<li><p><strong>使用随机搜索的交叉验证</strong>:</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> sklearn.model_selection <span class="keyword">import</span> RandomizedSearchCV</span><br><span class="line"></span><br><span class="line">random_search = RandomizedSearchCV(estimator=dt, param_distributions=param_dist, </span><br><span class="line">                                   n_iter=<span class="number">100</span>, cv=<span class="number">5</span>, n_jobs=-<span class="number">1</span>, verbose=<span class="number">2</span>, random_state=<span class="number">42</span>)</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><code>n_iter=100</code> 表示尝试100组参数组合。</li>
+<li><code>cv=5</code> 指定了5折交叉验证。</li>
+<li><code>n_jobs=-1</code> 表示使用所有可用的CPU核心。</li>
+<li><code>verbose=2</code> 表示过程中显示详细信息。</li>
+<li><code>random_state=42</code> 设置随机种子以确保可重复性。</li>
+</ul>
+</li>
+<li><p><strong>拟合数据</strong>:</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">random_search.fit(X_train, y_train)</span><br></pre></td></tr></table></figure>
+</li>
+<li><p><strong>查看最佳参数</strong>:</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">best_params = random_search.best_params_</span><br><span class="line"><span class="built_in">print</span>(best_params)</span><br></pre></td></tr></table></figure>
+</li>
+<li><p><strong>使用最佳模型</strong>:</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">best_dt = random_search.best_estimator_</span><br></pre></td></tr></table></figure>
+</li>
+<li><p><strong>预测和评估</strong>:</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">y_pred = best_dt.predict(X_test)</span><br></pre></td></tr></table></figure></li>
+</ol>
+<p><strong>注意事项</strong>:</p>
+<ul>
+<li>由于 <code>RandomizedSearchCV</code> 只尝试指定数量的参数组合，它的运行时间往往比 <code>GridSearchCV</code> 短。</li>
+<li>虽然随机搜索可能会遗漏最佳的参数组合，但在实践中，它往往能找到一个非常接近最佳的参数组合，而且消耗的时间远少于网格搜索。</li>
+<li>如果你知道某些参数更有可能影响模型的性能，你可以为这些参数指定更细的网格或分布，而为其他参数指定较宽的范围或较少的选项。</li>
+</ul>
+<h2 id="2-随机森林模型的参数调优和评估"><a href="#2-随机森林模型的参数调优和评估" class="headerlink" title="2. 随机森林模型的参数调优和评估"></a>2. 随机森林模型的参数调优和评估</h2><p>这里就将一下 <code>GridSearchCV</code> 的方法，<code>RandomizedSearchCV</code> 可以根据上面决策树的内容举一反三。</p>
+<p>以下是具体操作的步骤：</p>
+<ol>
+<li><p><strong>定义参数网格</strong>:<br>为所关心的每个参数定义一个值的范围或列表。例如：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">param_grid = &#123;</span><br><span class="line">    <span class="string">&#x27;n_estimators&#x27;</span>: [<span class="number">10</span>, <span class="number">50</span>, <span class="number">100</span>, <span class="number">200</span>],</span><br><span class="line">    <span class="string">&#x27;max_depth&#x27;</span>: [<span class="literal">None</span>, <span class="number">10</span>, <span class="number">20</span>, <span class="number">30</span>],</span><br><span class="line">    <span class="string">&#x27;min_samples_split&#x27;</span>: [<span class="number">2</span>, <span class="number">5</span>, <span class="number">10</span>],</span><br><span class="line">    <span class="string">&#x27;min_samples_leaf&#x27;</span>: [<span class="number">1</span>, <span class="number">2</span>, <span class="number">4</span>],</span><br><span class="line">    <span class="string">&#x27;bootstrap&#x27;</span>: [<span class="literal">True</span>, <span class="literal">False</span>]</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p><strong>初始化模型</strong>:</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> sklearn.ensemble <span class="keyword">import</span> RandomForestRegressor</span><br><span class="line">rf = RandomForestRegressor()</span><br></pre></td></tr></table></figure>
+</li>
+<li><p><strong>使用交叉验证的网格搜索</strong>:<br>使用 <code>GridSearchCV</code> 从 <code>scikit-learn</code> 来自动进行网格搜索和交叉验证。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> sklearn.model_selection <span class="keyword">import</span> GridSearchCV</span><br><span class="line"></span><br><span class="line">grid_search = GridSearchCV(estimator=rf, param_grid=param_grid, </span><br><span class="line">                           cv=<span class="number">3</span>, n_jobs=-<span class="number">1</span>, verbose=<span class="number">2</span>)</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><code>cv=3</code> 指定了3折交叉验证。</li>
+<li><code>n_jobs=-1</code> 使用所有可用的CPU核心。</li>
+<li><code>verbose=2</code> 表示过程中显示详细信息。</li>
+</ul>
+</li>
+<li><p><strong>拟合数据</strong>:<br>使用 <code>grid_search</code> 对象来拟合你的数据。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">grid_search.fit(X_train, y_train)</span><br></pre></td></tr></table></figure>
+</li>
+<li><p><strong>查看最佳参数</strong>:<br>一旦拟合完成，你可以查看最佳的参数组合。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">best_params = grid_search.best_params_</span><br><span class="line"><span class="built_in">print</span>(best_params)</span><br></pre></td></tr></table></figure>
+</li>
+<li><p><strong>使用最佳模型</strong>:<br>使用最佳参数训练的模型可以直接从 <code>grid_search</code> 获取。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">best_rf = grid_search.best_estimator_</span><br></pre></td></tr></table></figure>
+</li>
+<li><p><strong>预测和评估</strong>:<br>使用此最佳模型进行预测并评估其性能。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">y_pred = best_rf.predict(X_test)</span><br></pre></td></tr></table></figure></li>
+</ol>
+<p><strong>注意事项</strong>:</p>
+<ul>
+<li>网格搜索可能需要很长时间，取决于你的数据大小、参数网格的大小和可用计算资源。因此，从一个较小的参数网格开始可能是明智的，然后根据初步结果进一步调整。</li>
+<li>如果你想要在搜索的同时考虑更随机的参数选择，可以尝试使用 <code>RandomizedSearchCV</code> 而不是 <code>GridSearchCV</code>。这允许你为每个参数设置一个分布，并从中随机采样，而不是尝试所有的组合，这通常更快。</li>
+<li>在真实世界的应用中，使用交叉验证和参数搜索是很有价值的，因为它们可以帮助你确保模型不仅在训练数据上表现良好，而且还能很好地泛化到未见过的数据。</li>
+</ul>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>参数调优不仅是机器学习实践中的一个重要步骤，而且是确保模型达到最佳性能的关键。通过使用Sklearn提供的工具，我们可以系统地搜索模型的参数空间，找到最佳的参数组合。尽管网格搜索方法可以提供全面的参数组合评估，但在某些情况下，随机搜索可能是一个更高效的选择，尤其是当参数空间非常大时。总之，有效的参数调优需要结合多种策略和工具，同时根据具体的问题和数据进行适当的调整。通过细致的参数调优和评估，我们可以确保我们的模型达到其潜在的最大性能，为我们的任务提供可靠的预测。</p>
+</div>
+
+  <footer class="wrap post__foot">
+    
+      <div class="post__tags">
+        <a class="pill pill--link" href="/tags/Python/">Python</a><a class="pill pill--link" href="/tags/Scikit-Learn/">Scikit-Learn</a><a class="pill pill--link" href="/tags/%E6%9C%BA%E5%99%A8%E5%AD%A6%E4%B9%A0/">机器学习</a><a class="pill pill--link" href="/tags/%E8%B6%85%E5%8F%82%E6%95%B0%E8%B0%83%E4%BC%98/">超参数调优</a><a class="pill pill--link" href="/tags/%E6%A8%A1%E5%9E%8B%E8%AF%84%E4%BC%B0/">模型评估</a><a class="pill pill--link" href="/tags/%E4%BA%A4%E5%8F%89%E9%AA%8C%E8%AF%81/">交叉验证</a>
+      </div>
+    
+
+    
+
+    
+<section class="related" aria-label="相关文章">
+  <p class="related__label">相关文章</p>
+  <ul class="related__list">
+    
+      <li>
+        <a class="related__link" href="/2023/08/sklearn-regression-algorithm/">
+          <span class="related__title">Scikit-Learn 回归算法概述<span class="item__arrow" aria-hidden="true">→</span></span>
+          <time class="related__date" datetime="2023-08-11T15:53:00.000Z">2023-08-11</time>
+        </a>
+      </li>
+    
+      <li>
+        <a class="related__link" href="/2026/08/compress-pdf-with-python/">
+          <span class="related__title">使用 Python 质量压缩 PDF<span class="item__arrow" aria-hidden="true">→</span></span>
+          <time class="related__date" datetime="2026-08-21T04:00:00.000Z">2026-08-21</time>
+        </a>
+      </li>
+    
+      <li>
+        <a class="related__link" href="/2020/09/sublime-text-date-time/">
+          <span class="related__title">Sublime Text 3 插入当前日期及时间<span class="item__arrow" aria-hidden="true">→</span></span>
+          <time class="related__date" datetime="2020-09-08T16:09:04.000Z">2020-09-09</time>
+        </a>
+      </li>
+    
+  </ul>
+</section>
+
+
+    
+      <nav class="nextprev" aria-label="归档">
+        
+          <a class="nextprev__card" href="/2024/09/mongorestore/" rel="prev">
+            <span class="nextprev__label"><span aria-hidden="true">←</span> 上一篇</span>
+            <span class="nextprev__title">使用 mongorestore 恢复 MongoDB 集合</span>
+          </a>
+        
+
+        
+          <a class="nextprev__card nextprev__card--r" href="/2023/08/sklearn-regression-algorithm/" rel="next">
+            <span class="nextprev__label">下一篇 <span aria-hidden="true">→</span></span>
+            <span class="nextprev__title">Scikit-Learn 回归算法概述</span>
+          </a>
+        
+      </nav>
+    
+  </footer>
+</article>
+
+
+
+
+
+</main>
+
+  
+<footer class="foot">
+  <div class="wrap foot__in">
+    <div class="foot__left">
+      
+      <p class="foot__copy">© 2026 辣椒小皇纸</p>
+    </div>
+
+    <div class="foot__right">
+      
+        <a class="foot__link" href="https://github.com/suhuang64" target="_blank" rel="noopener noreferrer">GitHub</a>
+      
+      
+    </div>
+  </div>
+</footer>
+
+
+  
+    <button class="totop" id="totop" type="button" aria-label="回到顶部">
+      <svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true" focusable="false">
+        <path d="M8 3.6l5.2 5.2-1.1 1.1L8.8 6.8V13h-1.6V6.8L3.9 9.9 2.8 8.8z" fill="currentColor"/>
+      </svg>
+    </button>
+  
+
+  
+    
+<div class="shortcuts" id="shortcuts" aria-hidden="true">
+  <p class="shortcuts__label">快捷键</p>
+  <ul class="shortcuts__list">
+    <li><kbd>Shift</kbd><span>+</span><kbd>T</kbd><span class="shortcuts__text">切换主题</span></li>
+    <li><kbd>Shift</kbd><span>+</span><kbd>H</kbd><span class="shortcuts__text">回到首页</span></li>
+    <li><kbd>Shift</kbd><span>+</span><kbd>R</kbd><span class="shortcuts__text">随机文章</span></li>
+  </ul>
+</div>
+
+  
+
+  
+    <script type="application/json" id="post-index">["/2019/09/linux-screen/","/2019/09/linux-dst-server/","/2019/09/ubuntu-sudo-no-password/","/2019/09/gitee-hexo/","/2019/11/windows-dst-server/","/2019/11/diy-dst-cmd/","/dst/","/2019/11/dst-nickname/","/2020/02/dst-wx78/","/2020/03/aria2-h5ai/","/2020/05/github-action-hexo/","/2020/08/python-mail/","/2020/08/openvpn","/2020/09/sublime-text-date-time/","/2023/08/sklearn-paramenter-tune/","/2020/08/frp/","/2020/07/r-mice/","/2023/08/sklearn-regression-algorithm/","/2026/08/compress-pdf-with-python/","/2024/09/mongorestore/","/2026/08/github-pull-request/"]</script>
+  
+
+  <script src="/js/main.js" defer></script>
+</body>
+</html>

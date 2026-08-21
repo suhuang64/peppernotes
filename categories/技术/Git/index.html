@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+
+  
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#fcfcfb" media="(prefers-color-scheme: light)" id="tc-light">
+  <meta name="theme-color" content="#171715" media="(prefers-color-scheme: dark)" id="tc-dark">
+
+  <script>
+    (function () {
+      var root = document.documentElement;
+      var key  = 'idyll-theme';
+
+      root.classList.add('js');
+
+      var saved = null;
+      try { saved = localStorage.getItem(key); } catch (err) {}
+
+      var tcLight = document.getElementById('tc-light');
+      var tcDark  = document.getElementById('tc-dark');
+      var colors  = { light: '#fcfcfb', dark: '#171715' };
+
+      function syncChrome(mode) {
+        if (tcLight && tcDark) {
+          var c = colors[mode] || null;
+          tcLight.content = c || '#fcfcfb';
+          tcDark.content  = c || '#171715';
+        }
+      }
+
+      if (saved === 'light' || saved === 'dark') {
+        root.setAttribute('data-theme', saved);
+        syncChrome(saved);
+      }
+
+      function wire() {
+        var btn = document.getElementById('theme');
+        if (!btn) return;
+
+        var state = document.getElementById('theme-state');
+
+        function paint(mode) {
+          if (mode) root.setAttribute('data-theme', mode);
+          else root.removeAttribute('data-theme');
+
+          if (state) state.textContent = btn.getAttribute('data-' + (mode || 'auto'));
+
+          syncChrome(mode);
+
+          try {
+            if (mode) localStorage.setItem(key, mode);
+            else localStorage.removeItem(key);
+          } catch (err) {}
+
+          
+          document.dispatchEvent(new CustomEvent('idyll:theme', { detail: mode || 'auto' }));
+        }
+
+        btn.addEventListener('click', function () {
+          var cur     = root.getAttribute('data-theme') || '';
+          var sysDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+          if (cur === '') paint(sysDark ? 'light' : 'dark');
+          else if (cur === 'light') paint('dark');
+          else paint('');
+        });
+
+        paint(root.getAttribute('data-theme') || '');
+      }
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', wire);
+      } else {
+        wire();
+      }
+    })();
+  </script>
+
+  <title>Git · 辣椒手记</title>
+  
+  <meta name="author" content="辣椒小皇纸">
+  
+
+  <meta property="og:type" content="website">
+<meta property="og:title" content="Git · 辣椒手记">
+<meta property="og:url" content="https://peppernotes.top/categories/%E6%8A%80%E6%9C%AF/Git/index.html">
+<meta property="og:site_name" content="辣椒手记">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:author" content="辣椒小皇纸">
+<meta name="twitter:card" content="summary">
+  
+  <link rel="canonical" href="https://peppernotes.top/categories/%E6%8A%80%E6%9C%AF/Git/index.html">
+  <link rel="icon" href="/images/favicon.svg" type="image/svg+xml">
+  
+
+  <link rel="stylesheet" href="/css/style.css">
+  
+
+<meta name="generator" content="Hexo 8.1.2"></head>
+
+<body data-idyll="copy anchor ext toc shortcut"
+      data-copy="复制"
+      data-copied="已复制"
+      data-copyfail="请按 Ctrl+C"
+      data-anchor="链接到这一节">
+
+  
+
+  <a class="skip" href="#main">跳到正文</a>
+
+  <header class="nav" id="nav">
+  <div class="wrap nav__in">
+    <a class="nav__brand" href="/">
+      <span class="nav__mark" aria-hidden="true"></span>
+      <span class="nav__name">辣椒手记</span>
+    </a>
+
+    <div class="nav__right">
+      <nav class="nav__links" aria-label="站点导航">
+        
+          <a class="nav__link"
+             href="/">首页</a>
+        
+          <a class="nav__link"
+             href="/archives/">归档</a>
+        
+          <a class="nav__link is-on"
+             href="/categories/" aria-current=&#34;page&#34;>分类</a>
+        
+          <a class="nav__link"
+             href="/tags/">标签</a>
+        
+          <a class="nav__link"
+             href="/series/">系列</a>
+        
+          <a class="nav__link"
+             href="/about/">关于</a>
+        
+      </nav>
+
+      
+        
+        <button class="theme" id="theme" type="button"
+                data-auto="跟随系统"
+                data-light="亮色"
+                data-dark="暗色">
+          <svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true" focusable="false">
+            <g class="theme__ico theme__ico--auto">
+              <circle cx="8" cy="8" r="5.6" fill="none" stroke="currentColor" stroke-width="1.4"/>
+              <path d="M8 2.4a5.6 5.6 0 0 0 0 11.2z" fill="currentColor"/>
+            </g>
+            <g class="theme__ico theme__ico--light"
+               fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round">
+              <circle cx="8" cy="8" r="3.1"/>
+              <path d="M8 1.3v1.3M8 13.4v1.3M14.7 8h-1.3M2.6 8H1.3M12.74 3.26l-.92.92M4.18 11.82l-.92.92M12.74 12.74l-.92-.92M4.18 4.18l-.92-.92"/>
+            </g>
+            <g class="theme__ico theme__ico--dark">
+              <path d="M14 8.53A6 6 0 1 1 7.47 2 4.67 4.67 0 0 0 14 8.53z"
+                    fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
+            </g>
+          </svg>
+          
+          <span class="sr-only" id="theme-state" aria-live="polite">跟随系统</span>
+        </button>
+      
+    </div>
+  </div>
+</header>
+
+
+  <main class="main" id="main">
+
+<section class="wrap page-head">
+  <p class="page-head__kicker">分类</p>
+  <h1 class="page-head__title">Git</h1>
+  <p class="page-head__meta">1 篇</p>
+</section>
+
+<section class="wrap">
+  
+
+
+
+  <div class="list">
+    
+      <div class="year">
+        <span class="year__n">2026</span>
+        <span class="year__rule"></span>
+      </div>
+    
+
+      <a class="item" href="/2026/08/github-pull-request/">
+        <time class="item__date" datetime="2026-08-20T09:02:00.000Z">08-20</time>
+
+        <div class="item__body">
+          <h2 class="item__title">GitHub Pull Request 完整教程：从 Fork、提交 PR 到同步上游仓库<span class="item__arrow" aria-hidden="true">→</span></h2>
+
+          
+          <p class="item__desc">在参与 GitHub 开源项目时，一个非常常见的工作流是： Fork 别人的项目 → 修改代码 → 提交 Pull Request → 作者 Review → Merge 或 Reject → 继续同步原项目</p>
+
+          
+            <div class="item__tags">
+              <span class="pill">Git</span><span class="pill">GitHub</span><span class="pill">Pull Request</span><span class="pill">Fork</span><span class="pill">开源协作</span><span class="pill">版本控制</span>
+            </div>
+          
+        </div>
+      </a>
+    
+  </div>
+
+
+  
+
+</section>
+</main>
+
+  
+<footer class="foot">
+  <div class="wrap foot__in">
+    <div class="foot__left">
+      
+      <p class="foot__copy">© 2026 辣椒小皇纸</p>
+    </div>
+
+    <div class="foot__right">
+      
+        <a class="foot__link" href="https://github.com/suhuang64" target="_blank" rel="noopener noreferrer">GitHub</a>
+      
+      
+    </div>
+  </div>
+</footer>
+
+
+  
+    <button class="totop" id="totop" type="button" aria-label="回到顶部">
+      <svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true" focusable="false">
+        <path d="M8 3.6l5.2 5.2-1.1 1.1L8.8 6.8V13h-1.6V6.8L3.9 9.9 2.8 8.8z" fill="currentColor"/>
+      </svg>
+    </button>
+  
+
+  
+    
+<div class="shortcuts" id="shortcuts" aria-hidden="true">
+  <p class="shortcuts__label">快捷键</p>
+  <ul class="shortcuts__list">
+    <li><kbd>Shift</kbd><span>+</span><kbd>T</kbd><span class="shortcuts__text">切换主题</span></li>
+    <li><kbd>Shift</kbd><span>+</span><kbd>H</kbd><span class="shortcuts__text">回到首页</span></li>
+    <li><kbd>Shift</kbd><span>+</span><kbd>R</kbd><span class="shortcuts__text">随机文章</span></li>
+  </ul>
+</div>
+
+  
+
+  
+    <script type="application/json" id="post-index">["/2019/09/linux-screen/","/2019/09/linux-dst-server/","/2019/09/ubuntu-sudo-no-password/","/2019/09/gitee-hexo/","/2019/11/windows-dst-server/","/2019/11/diy-dst-cmd/","/dst/","/2019/11/dst-nickname/","/2020/02/dst-wx78/","/2020/03/aria2-h5ai/","/2020/05/github-action-hexo/","/2020/08/python-mail/","/2020/08/openvpn","/2020/09/sublime-text-date-time/","/2023/08/sklearn-paramenter-tune/","/2020/08/frp/","/2020/07/r-mice/","/2023/08/sklearn-regression-algorithm/","/2026/08/compress-pdf-with-python/","/2024/09/mongorestore/","/2026/08/github-pull-request/"]</script>
+  
+
+  <script src="/js/main.js" defer></script>
+</body>
+</html>

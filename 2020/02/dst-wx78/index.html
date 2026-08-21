@@ -1,0 +1,1798 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+
+  
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#fcfcfb" media="(prefers-color-scheme: light)" id="tc-light">
+  <meta name="theme-color" content="#171715" media="(prefers-color-scheme: dark)" id="tc-dark">
+
+  <script>
+    (function () {
+      var root = document.documentElement;
+      var key  = 'idyll-theme';
+
+      root.classList.add('js');
+
+      var saved = null;
+      try { saved = localStorage.getItem(key); } catch (err) {}
+
+      var tcLight = document.getElementById('tc-light');
+      var tcDark  = document.getElementById('tc-dark');
+      var colors  = { light: '#fcfcfb', dark: '#171715' };
+
+      function syncChrome(mode) {
+        if (tcLight && tcDark) {
+          var c = colors[mode] || null;
+          tcLight.content = c || '#fcfcfb';
+          tcDark.content  = c || '#171715';
+        }
+      }
+
+      if (saved === 'light' || saved === 'dark') {
+        root.setAttribute('data-theme', saved);
+        syncChrome(saved);
+      }
+
+      function wire() {
+        var btn = document.getElementById('theme');
+        if (!btn) return;
+
+        var state = document.getElementById('theme-state');
+
+        function paint(mode) {
+          if (mode) root.setAttribute('data-theme', mode);
+          else root.removeAttribute('data-theme');
+
+          if (state) state.textContent = btn.getAttribute('data-' + (mode || 'auto'));
+
+          syncChrome(mode);
+
+          try {
+            if (mode) localStorage.setItem(key, mode);
+            else localStorage.removeItem(key);
+          } catch (err) {}
+
+          
+          document.dispatchEvent(new CustomEvent('idyll:theme', { detail: mode || 'auto' }));
+        }
+
+        btn.addEventListener('click', function () {
+          var cur     = root.getAttribute('data-theme') || '';
+          var sysDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+          if (cur === '') paint(sysDark ? 'light' : 'dark');
+          else if (cur === 'light') paint('dark');
+          else paint('');
+        });
+
+        paint(root.getAttribute('data-theme') || '');
+      }
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', wire);
+      } else {
+        wire();
+      }
+    })();
+  </script>
+
+  <title>饥荒联机版 WX-78 雷击超载时间计算公式 · 辣椒手记</title>
+  <meta name="description" content="WX-78被雷击之后超载时间一直是个谜博主提取饥荒联机版内部Lua代码，写了一个计算超载时间的公式，点击下面按钮输入雷击天数即可">
+  <meta name="author" content="辣椒小皇纸">
+  
+
+  <meta name="description" content="WX-78被雷击之后超载时间一直是个谜博主提取饥荒联机版内部Lua代码，写了一个计算超载时间的公式，点击下面按钮输入雷击天数即可">
+<meta property="og:type" content="article">
+<meta property="og:title" content="饥荒联机版 WX-78 雷击超载时间计算公式 · 辣椒手记">
+<meta property="og:url" content="https://peppernotes.top/2020/02/dst-wx78/index.html">
+<meta property="og:site_name" content="辣椒手记">
+<meta property="og:description" content="WX-78被雷击之后超载时间一直是个谜博主提取饥荒联机版内部Lua代码，写了一个计算超载时间的公式，点击下面按钮输入雷击天数即可">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2020-02-28T10:49:00.000Z">
+<meta property="article:modified_time" content="2020-02-28T10:49:00.000Z">
+<meta property="article:author" content="辣椒小皇纸">
+<meta property="article:tag" content="Lua">
+<meta property="article:tag" content="WX-78">
+<meta property="article:tag" content="公式计算">
+<meta property="article:tag" content="超载">
+<meta property="article:tag" content="雷击">
+<meta property="article:tag" content="饥荒联机版">
+<meta name="twitter:card" content="summary">
+  
+  <link rel="canonical" href="https://peppernotes.top/2020/02/dst-wx78/">
+  <link rel="icon" href="/images/favicon.svg" type="image/svg+xml">
+  
+
+  <link rel="stylesheet" href="/css/style.css">
+  
+
+<meta name="generator" content="Hexo 8.1.2"></head>
+
+<body data-idyll="copy anchor ext toc shortcut"
+      data-copy="复制"
+      data-copied="已复制"
+      data-copyfail="请按 Ctrl+C"
+      data-anchor="链接到这一节">
+
+  
+    <div class="progress" id="progress" aria-hidden="true"><i></i></div>
+  
+
+  <a class="skip" href="#main">跳到正文</a>
+
+  <header class="nav" id="nav">
+  <div class="wrap nav__in">
+    <a class="nav__brand" href="/">
+      <span class="nav__mark" aria-hidden="true"></span>
+      <span class="nav__name">辣椒手记</span>
+    </a>
+
+    <div class="nav__right">
+      <nav class="nav__links" aria-label="站点导航">
+        
+          <a class="nav__link"
+             href="/">首页</a>
+        
+          <a class="nav__link"
+             href="/archives/">归档</a>
+        
+          <a class="nav__link"
+             href="/categories/">分类</a>
+        
+          <a class="nav__link"
+             href="/tags/">标签</a>
+        
+          <a class="nav__link"
+             href="/series/">系列</a>
+        
+          <a class="nav__link"
+             href="/about/">关于</a>
+        
+      </nav>
+
+      
+        
+        <button class="theme" id="theme" type="button"
+                data-auto="跟随系统"
+                data-light="亮色"
+                data-dark="暗色">
+          <svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true" focusable="false">
+            <g class="theme__ico theme__ico--auto">
+              <circle cx="8" cy="8" r="5.6" fill="none" stroke="currentColor" stroke-width="1.4"/>
+              <path d="M8 2.4a5.6 5.6 0 0 0 0 11.2z" fill="currentColor"/>
+            </g>
+            <g class="theme__ico theme__ico--light"
+               fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round">
+              <circle cx="8" cy="8" r="3.1"/>
+              <path d="M8 1.3v1.3M8 13.4v1.3M14.7 8h-1.3M2.6 8H1.3M12.74 3.26l-.92.92M4.18 11.82l-.92.92M12.74 12.74l-.92-.92M4.18 4.18l-.92-.92"/>
+            </g>
+            <g class="theme__ico theme__ico--dark">
+              <path d="M14 8.53A6 6 0 1 1 7.47 2 4.67 4.67 0 0 0 14 8.53z"
+                    fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
+            </g>
+          </svg>
+          
+          <span class="sr-only" id="theme-state" aria-live="polite">跟随系统</span>
+        </button>
+      
+    </div>
+  </div>
+</header>
+
+
+  <main class="main" id="main">
+
+<article class="post">
+  <header class="wrap post__head">
+    
+      <p class="post__kicker">
+        <a href="/categories/%E6%B8%B8%E6%88%8F/">游戏</a><span class="sep">/</span><a href="/categories/%E6%B8%B8%E6%88%8F/%E9%A5%A5%E8%8D%92/">饥荒</a>
+      </p>
+    
+
+    <h1 class="post__title">饥荒联机版 WX-78 雷击超载时间计算公式</h1>
+
+    <div class="post__meta">
+      
+      <time datetime="2020-02-28T10:49:00.000Z"><span class="sr-only">发布于 </span>2020-02-28</time>
+      
+        <span class="dot" aria-hidden="true">·</span>
+        <span>1,273 字</span>
+      
+      
+        <span class="dot" aria-hidden="true">·</span>
+        <span>4 分钟</span>
+      
+      
+    </div>
+  </header>
+
+  
+<nav class="toc" aria-label="目录">
+  <p class="toc__label">目录</p>
+  <ol class="toc__list">
+    
+      <li>
+        <a class="toc__link" href="#WX-78被雷击之后超载时间一直是个谜" data-toc-id="WX-78被雷击之后超载时间一直是个谜" title="WX-78被雷击之后超载时间一直是个谜">WX-78被雷击之后超载时间一直是个谜</a>
+        
+      </li>
+    
+      <li>
+        <a class="toc__link" href="#另附表格" data-toc-id="另附表格" title="另附表格">另附表格</a>
+        
+      </li>
+    
+  </ol>
+</nav>
+
+
+  <div class="wrap prose" id="content"><h2 id="WX-78被雷击之后超载时间一直是个谜"><a href="#WX-78被雷击之后超载时间一直是个谜" class="headerlink" title="WX-78被雷击之后超载时间一直是个谜"></a>WX-78被雷击之后超载时间一直是个谜</h2><p>博主提取饥荒联机版内部<code>Lua</code>代码，写了一个计算超载时间的公式，点击下面按钮输入雷击天数即可</p>
+<span id="more"></span>
+
+<p><strong>注意</strong>：</p>
+<ul>
+<li>每次雷击后获得的时间是一个范围内的<strong>随机数</strong>，故我们得到的是<strong>平均值</strong>和<strong>上下范围</strong></li>
+<li>此方法从未超载状态算起</li>
+</ul>
+<script>
+function get_times() {
+    var lightning = prompt("请输入WX-78的雷击次数","");
+    if (lightning != null){
+        lightning = Number(lightning);
+     　 if (!isNaN(lightning)){
+            function CalcDiminishingReturns0(current, basedelta) {
+                var dampen = 3 * basedelta / (current + 3 * basedelta);
+                var dcharge = dampen * basedelta * .5;
+                return current + dcharge;
+            }
+            function CalcDiminishingReturns1(current, basedelta) {
+                var dampen = 3 * basedelta / (current + 3 * basedelta);
+                var dcharge = dampen * basedelta * .5 * (1 + dampen);
+                return current + dcharge;
+            }
+            var output0 = 0;
+            var output1 = 0;
+            var i;
+            for (i = 0; i < lightning; i++) {
+                output0 = CalcDiminishingReturns0(output0,480);
+                output1 = CalcDiminishingReturns1(output1,480);
+            }
+            var output = (output0 + output1) / 2;
+            text = 'WX78被雷击'+lightning+'次后获得约'+Math.round(output/480)+'天的负载（'+Math.round(output)+'秒）\n范围为'+Math.round(output0)+'至'+Math.round(output1)+'秒';
+            alert(text);
+        }else{
+            alert("请输入数字");
+        }
+    }
+}
+</script>
+<input type="button" onClick="get_times()" value="点击按钮">
+
+
+<h2 id="另附表格"><a href="#另附表格" class="headerlink" title="另附表格"></a>另附表格</h2><table>
+<thead>
+<tr>
+<th>雷击次数</th>
+<th>平均超载天数</th>
+<th>平均超载秒数</th>
+<th>最少超载秒数</th>
+<th>最多超载秒数</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>10</td>
+<td>4</td>
+<td>1922</td>
+<td>1602</td>
+<td>2242</td>
+</tr>
+<tr>
+<td>20</td>
+<td>6</td>
+<td>2973</td>
+<td>2593</td>
+<td>3353</td>
+</tr>
+<tr>
+<td>30</td>
+<td>8</td>
+<td>3793</td>
+<td>3381</td>
+<td>4206</td>
+</tr>
+<tr>
+<td>40</td>
+<td>9</td>
+<td>4490</td>
+<td>4055</td>
+<td>4925</td>
+</tr>
+<tr>
+<td>50</td>
+<td>11</td>
+<td>5106</td>
+<td>4655</td>
+<td>5557</td>
+</tr>
+<tr>
+<td>60</td>
+<td>12</td>
+<td>5664</td>
+<td>5200</td>
+<td>6128</td>
+</tr>
+<tr>
+<td>70</td>
+<td>13</td>
+<td>6178</td>
+<td>5703</td>
+<td>6652</td>
+</tr>
+<tr>
+<td>80</td>
+<td>14</td>
+<td>6657</td>
+<td>6173</td>
+<td>7140</td>
+</tr>
+<tr>
+<td>90</td>
+<td>15</td>
+<td>7107</td>
+<td>6616</td>
+<td>7598</td>
+</tr>
+<tr>
+<td>100</td>
+<td>16</td>
+<td>7533</td>
+<td>7035</td>
+<td>8031</td>
+</tr>
+<tr>
+<td>110</td>
+<td>17</td>
+<td>7938</td>
+<td>7434</td>
+<td>8442</td>
+</tr>
+<tr>
+<td>120</td>
+<td>17</td>
+<td>8325</td>
+<td>7816</td>
+<td>8835</td>
+</tr>
+<tr>
+<td>130</td>
+<td>18</td>
+<td>8697</td>
+<td>8183</td>
+<td>9211</td>
+</tr>
+<tr>
+<td>140</td>
+<td>19</td>
+<td>9055</td>
+<td>8536</td>
+<td>9573</td>
+</tr>
+<tr>
+<td>150</td>
+<td>20</td>
+<td>9400</td>
+<td>8877</td>
+<td>9923</td>
+</tr>
+<tr>
+<td>160</td>
+<td>20</td>
+<td>9734</td>
+<td>9208</td>
+<td>10260</td>
+</tr>
+<tr>
+<td>170</td>
+<td>21</td>
+<td>10058</td>
+<td>9528</td>
+<td>10588</td>
+</tr>
+<tr>
+<td>180</td>
+<td>22</td>
+<td>10372</td>
+<td>9839</td>
+<td>10905</td>
+</tr>
+<tr>
+<td>190</td>
+<td>22</td>
+<td>10678</td>
+<td>10142</td>
+<td>11214</td>
+</tr>
+<tr>
+<td>200</td>
+<td>23</td>
+<td>10976</td>
+<td>10437</td>
+<td>11515</td>
+</tr>
+<tr>
+<td>210</td>
+<td>23</td>
+<td>11266</td>
+<td>10725</td>
+<td>11808</td>
+</tr>
+<tr>
+<td>220</td>
+<td>24</td>
+<td>11550</td>
+<td>11006</td>
+<td>12094</td>
+</tr>
+<tr>
+<td>230</td>
+<td>25</td>
+<td>11827</td>
+<td>11281</td>
+<td>12374</td>
+</tr>
+<tr>
+<td>240</td>
+<td>25</td>
+<td>12099</td>
+<td>11550</td>
+<td>12647</td>
+</tr>
+<tr>
+<td>250</td>
+<td>26</td>
+<td>12364</td>
+<td>11814</td>
+<td>12915</td>
+</tr>
+<tr>
+<td>260</td>
+<td>26</td>
+<td>12625</td>
+<td>12072</td>
+<td>13178</td>
+</tr>
+<tr>
+<td>270</td>
+<td>27</td>
+<td>12880</td>
+<td>12326</td>
+<td>13435</td>
+</tr>
+<tr>
+<td>280</td>
+<td>27</td>
+<td>13131</td>
+<td>12575</td>
+<td>13688</td>
+</tr>
+<tr>
+<td>290</td>
+<td>28</td>
+<td>13378</td>
+<td>12819</td>
+<td>13936</td>
+</tr>
+<tr>
+<td>300</td>
+<td>28</td>
+<td>13620</td>
+<td>13060</td>
+<td>14180</td>
+</tr>
+<tr>
+<td>310</td>
+<td>29</td>
+<td>13858</td>
+<td>13297</td>
+<td>14420</td>
+</tr>
+<tr>
+<td>320</td>
+<td>29</td>
+<td>14093</td>
+<td>13529</td>
+<td>14656</td>
+</tr>
+<tr>
+<td>330</td>
+<td>30</td>
+<td>14323</td>
+<td>13759</td>
+<td>14888</td>
+</tr>
+<tr>
+<td>340</td>
+<td>30</td>
+<td>14551</td>
+<td>13985</td>
+<td>15117</td>
+</tr>
+<tr>
+<td>350</td>
+<td>31</td>
+<td>14775</td>
+<td>14207</td>
+<td>15342</td>
+</tr>
+<tr>
+<td>360</td>
+<td>31</td>
+<td>14996</td>
+<td>14427</td>
+<td>15564</td>
+</tr>
+<tr>
+<td>370</td>
+<td>32</td>
+<td>15213</td>
+<td>14643</td>
+<td>15784</td>
+</tr>
+<tr>
+<td>380</td>
+<td>32</td>
+<td>15428</td>
+<td>14857</td>
+<td>16000</td>
+</tr>
+<tr>
+<td>390</td>
+<td>33</td>
+<td>15640</td>
+<td>15068</td>
+<td>16213</td>
+</tr>
+<tr>
+<td>400</td>
+<td>33</td>
+<td>15850</td>
+<td>15276</td>
+<td>16423</td>
+</tr>
+<tr>
+<td>410</td>
+<td>33</td>
+<td>16056</td>
+<td>15481</td>
+<td>16631</td>
+</tr>
+<tr>
+<td>420</td>
+<td>34</td>
+<td>16261</td>
+<td>15685</td>
+<td>16837</td>
+</tr>
+<tr>
+<td>430</td>
+<td>34</td>
+<td>16462</td>
+<td>15885</td>
+<td>17040</td>
+</tr>
+<tr>
+<td>440</td>
+<td>35</td>
+<td>16662</td>
+<td>16084</td>
+<td>17240</td>
+</tr>
+<tr>
+<td>450</td>
+<td>35</td>
+<td>16859</td>
+<td>16280</td>
+<td>17438</td>
+</tr>
+<tr>
+<td>460</td>
+<td>36</td>
+<td>17054</td>
+<td>16474</td>
+<td>17634</td>
+</tr>
+<tr>
+<td>470</td>
+<td>36</td>
+<td>17247</td>
+<td>16666</td>
+<td>17828</td>
+</tr>
+<tr>
+<td>480</td>
+<td>36</td>
+<td>17438</td>
+<td>16856</td>
+<td>18020</td>
+</tr>
+<tr>
+<td>490</td>
+<td>37</td>
+<td>17627</td>
+<td>17044</td>
+<td>18210</td>
+</tr>
+<tr>
+<td>500</td>
+<td>37</td>
+<td>17814</td>
+<td>17230</td>
+<td>18398</td>
+</tr>
+<tr>
+<td>510</td>
+<td>37</td>
+<td>17999</td>
+<td>17414</td>
+<td>18584</td>
+</tr>
+<tr>
+<td>520</td>
+<td>38</td>
+<td>18183</td>
+<td>17597</td>
+<td>18768</td>
+</tr>
+<tr>
+<td>530</td>
+<td>38</td>
+<td>18364</td>
+<td>17778</td>
+<td>18951</td>
+</tr>
+<tr>
+<td>540</td>
+<td>39</td>
+<td>18544</td>
+<td>17957</td>
+<td>19131</td>
+</tr>
+<tr>
+<td>550</td>
+<td>39</td>
+<td>18722</td>
+<td>18134</td>
+<td>19310</td>
+</tr>
+<tr>
+<td>560</td>
+<td>39</td>
+<td>18899</td>
+<td>18310</td>
+<td>19488</td>
+</tr>
+<tr>
+<td>570</td>
+<td>40</td>
+<td>19074</td>
+<td>18484</td>
+<td>19663</td>
+</tr>
+<tr>
+<td>580</td>
+<td>40</td>
+<td>19247</td>
+<td>18657</td>
+<td>19838</td>
+</tr>
+<tr>
+<td>590</td>
+<td>40</td>
+<td>19419</td>
+<td>18828</td>
+<td>20010</td>
+</tr>
+<tr>
+<td>600</td>
+<td>41</td>
+<td>19590</td>
+<td>18998</td>
+<td>20182</td>
+</tr>
+<tr>
+<td>610</td>
+<td>41</td>
+<td>19759</td>
+<td>19167</td>
+<td>20352</td>
+</tr>
+<tr>
+<td>620</td>
+<td>42</td>
+<td>19927</td>
+<td>19334</td>
+<td>20520</td>
+</tr>
+<tr>
+<td>630</td>
+<td>42</td>
+<td>20093</td>
+<td>19500</td>
+<td>20687</td>
+</tr>
+<tr>
+<td>640</td>
+<td>42</td>
+<td>20259</td>
+<td>19664</td>
+<td>20853</td>
+</tr>
+<tr>
+<td>650</td>
+<td>43</td>
+<td>20422</td>
+<td>19827</td>
+<td>21017</td>
+</tr>
+<tr>
+<td>660</td>
+<td>43</td>
+<td>20585</td>
+<td>19989</td>
+<td>21181</td>
+</tr>
+<tr>
+<td>670</td>
+<td>43</td>
+<td>20746</td>
+<td>20150</td>
+<td>21342</td>
+</tr>
+<tr>
+<td>680</td>
+<td>44</td>
+<td>20906</td>
+<td>20310</td>
+<td>21503</td>
+</tr>
+<tr>
+<td>690</td>
+<td>44</td>
+<td>21065</td>
+<td>20468</td>
+<td>21663</td>
+</tr>
+<tr>
+<td>700</td>
+<td>44</td>
+<td>21223</td>
+<td>20625</td>
+<td>21821</td>
+</tr>
+<tr>
+<td>710</td>
+<td>45</td>
+<td>21380</td>
+<td>20781</td>
+<td>21978</td>
+</tr>
+<tr>
+<td>720</td>
+<td>45</td>
+<td>21535</td>
+<td>20936</td>
+<td>22135</td>
+</tr>
+<tr>
+<td>730</td>
+<td>45</td>
+<td>21690</td>
+<td>21090</td>
+<td>22290</td>
+</tr>
+<tr>
+<td>740</td>
+<td>46</td>
+<td>21843</td>
+<td>21243</td>
+<td>22444</td>
+</tr>
+<tr>
+<td>750</td>
+<td>46</td>
+<td>21996</td>
+<td>21395</td>
+<td>22597</td>
+</tr>
+<tr>
+<td>760</td>
+<td>46</td>
+<td>22147</td>
+<td>21546</td>
+<td>22749</td>
+</tr>
+<tr>
+<td>770</td>
+<td>46</td>
+<td>22298</td>
+<td>21696</td>
+<td>22899</td>
+</tr>
+<tr>
+<td>780</td>
+<td>47</td>
+<td>22447</td>
+<td>21845</td>
+<td>23049</td>
+</tr>
+<tr>
+<td>790</td>
+<td>47</td>
+<td>22596</td>
+<td>21993</td>
+<td>23198</td>
+</tr>
+<tr>
+<td>800</td>
+<td>47</td>
+<td>22743</td>
+<td>22140</td>
+<td>23346</td>
+</tr>
+<tr>
+<td>810</td>
+<td>48</td>
+<td>22890</td>
+<td>22286</td>
+<td>23494</td>
+</tr>
+<tr>
+<td>820</td>
+<td>48</td>
+<td>23036</td>
+<td>22431</td>
+<td>23640</td>
+</tr>
+<tr>
+<td>830</td>
+<td>48</td>
+<td>23180</td>
+<td>22576</td>
+<td>23785</td>
+</tr>
+<tr>
+<td>840</td>
+<td>49</td>
+<td>23324</td>
+<td>22719</td>
+<td>23930</td>
+</tr>
+<tr>
+<td>850</td>
+<td>49</td>
+<td>23468</td>
+<td>22862</td>
+<td>24073</td>
+</tr>
+<tr>
+<td>860</td>
+<td>49</td>
+<td>23610</td>
+<td>23004</td>
+<td>24216</td>
+</tr>
+<tr>
+<td>870</td>
+<td>49</td>
+<td>23751</td>
+<td>23145</td>
+<td>24358</td>
+</tr>
+<tr>
+<td>880</td>
+<td>50</td>
+<td>23892</td>
+<td>23285</td>
+<td>24499</td>
+</tr>
+<tr>
+<td>890</td>
+<td>50</td>
+<td>24032</td>
+<td>23424</td>
+<td>24639</td>
+</tr>
+<tr>
+<td>900</td>
+<td>50</td>
+<td>24171</td>
+<td>23563</td>
+<td>24779</td>
+</tr>
+<tr>
+<td>910</td>
+<td>51</td>
+<td>24309</td>
+<td>23701</td>
+<td>24917</td>
+</tr>
+<tr>
+<td>920</td>
+<td>51</td>
+<td>24447</td>
+<td>23838</td>
+<td>25055</td>
+</tr>
+<tr>
+<td>930</td>
+<td>51</td>
+<td>24583</td>
+<td>23975</td>
+<td>25192</td>
+</tr>
+<tr>
+<td>940</td>
+<td>51</td>
+<td>24720</td>
+<td>24110</td>
+<td>25329</td>
+</tr>
+<tr>
+<td>950</td>
+<td>52</td>
+<td>24855</td>
+<td>24245</td>
+<td>25465</td>
+</tr>
+<tr>
+<td>960</td>
+<td>52</td>
+<td>24989</td>
+<td>24379</td>
+<td>25600</td>
+</tr>
+<tr>
+<td>970</td>
+<td>52</td>
+<td>25123</td>
+<td>24513</td>
+<td>25734</td>
+</tr>
+<tr>
+<td>980</td>
+<td>53</td>
+<td>25257</td>
+<td>24646</td>
+<td>25868</td>
+</tr>
+<tr>
+<td>990</td>
+<td>53</td>
+<td>25389</td>
+<td>24778</td>
+<td>26000</td>
+</tr>
+<tr>
+<td>1000</td>
+<td>53</td>
+<td>25521</td>
+<td>24909</td>
+<td>26133</td>
+</tr>
+<tr>
+<td>1010</td>
+<td>53</td>
+<td>25652</td>
+<td>25040</td>
+<td>26264</td>
+</tr>
+<tr>
+<td>1020</td>
+<td>54</td>
+<td>25783</td>
+<td>25171</td>
+<td>26395</td>
+</tr>
+<tr>
+<td>1030</td>
+<td>54</td>
+<td>25913</td>
+<td>25300</td>
+<td>26526</td>
+</tr>
+<tr>
+<td>1040</td>
+<td>54</td>
+<td>26042</td>
+<td>25429</td>
+<td>26655</td>
+</tr>
+<tr>
+<td>1050</td>
+<td>55</td>
+<td>26171</td>
+<td>25557</td>
+<td>26784</td>
+</tr>
+<tr>
+<td>1060</td>
+<td>55</td>
+<td>26299</td>
+<td>25685</td>
+<td>26913</td>
+</tr>
+<tr>
+<td>1070</td>
+<td>55</td>
+<td>26426</td>
+<td>25812</td>
+<td>27040</td>
+</tr>
+<tr>
+<td>1080</td>
+<td>55</td>
+<td>26553</td>
+<td>25939</td>
+<td>27168</td>
+</tr>
+<tr>
+<td>1090</td>
+<td>56</td>
+<td>26680</td>
+<td>26065</td>
+<td>27294</td>
+</tr>
+<tr>
+<td>1100</td>
+<td>56</td>
+<td>26805</td>
+<td>26190</td>
+<td>27420</td>
+</tr>
+<tr>
+<td>1110</td>
+<td>56</td>
+<td>26930</td>
+<td>26315</td>
+<td>27546</td>
+</tr>
+<tr>
+<td>1120</td>
+<td>56</td>
+<td>27055</td>
+<td>26439</td>
+<td>27671</td>
+</tr>
+<tr>
+<td>1130</td>
+<td>57</td>
+<td>27179</td>
+<td>26563</td>
+<td>27795</td>
+</tr>
+<tr>
+<td>1140</td>
+<td>57</td>
+<td>27303</td>
+<td>26686</td>
+<td>27919</td>
+</tr>
+<tr>
+<td>1150</td>
+<td>57</td>
+<td>27425</td>
+<td>26809</td>
+<td>28042</td>
+</tr>
+<tr>
+<td>1160</td>
+<td>57</td>
+<td>27548</td>
+<td>26931</td>
+<td>28165</td>
+</tr>
+<tr>
+<td>1170</td>
+<td>58</td>
+<td>27670</td>
+<td>27053</td>
+<td>28287</td>
+</tr>
+<tr>
+<td>1180</td>
+<td>58</td>
+<td>27791</td>
+<td>27174</td>
+<td>28409</td>
+</tr>
+<tr>
+<td>1190</td>
+<td>58</td>
+<td>27912</td>
+<td>27294</td>
+<td>28530</td>
+</tr>
+<tr>
+<td>1200</td>
+<td>58</td>
+<td>28032</td>
+<td>27414</td>
+<td>28650</td>
+</tr>
+<tr>
+<td>1210</td>
+<td>59</td>
+<td>28152</td>
+<td>27534</td>
+<td>28771</td>
+</tr>
+<tr>
+<td>1220</td>
+<td>59</td>
+<td>28271</td>
+<td>27653</td>
+<td>28890</td>
+</tr>
+<tr>
+<td>1230</td>
+<td>59</td>
+<td>28390</td>
+<td>27771</td>
+<td>29009</td>
+</tr>
+<tr>
+<td>1240</td>
+<td>59</td>
+<td>28509</td>
+<td>27889</td>
+<td>29128</td>
+</tr>
+<tr>
+<td>1250</td>
+<td>60</td>
+<td>28627</td>
+<td>28007</td>
+<td>29246</td>
+</tr>
+<tr>
+<td>1260</td>
+<td>60</td>
+<td>28744</td>
+<td>28124</td>
+<td>29364</td>
+</tr>
+<tr>
+<td>1270</td>
+<td>60</td>
+<td>28861</td>
+<td>28241</td>
+<td>29481</td>
+</tr>
+<tr>
+<td>1280</td>
+<td>60</td>
+<td>28977</td>
+<td>28357</td>
+<td>29598</td>
+</tr>
+<tr>
+<td>1290</td>
+<td>61</td>
+<td>29094</td>
+<td>28473</td>
+<td>29714</td>
+</tr>
+<tr>
+<td>1300</td>
+<td>61</td>
+<td>29209</td>
+<td>28588</td>
+<td>29830</td>
+</tr>
+<tr>
+<td>1310</td>
+<td>61</td>
+<td>29324</td>
+<td>28703</td>
+<td>29945</td>
+</tr>
+<tr>
+<td>1320</td>
+<td>61</td>
+<td>29439</td>
+<td>28818</td>
+<td>30060</td>
+</tr>
+<tr>
+<td>1330</td>
+<td>62</td>
+<td>29553</td>
+<td>28932</td>
+<td>30175</td>
+</tr>
+<tr>
+<td>1340</td>
+<td>62</td>
+<td>29667</td>
+<td>29045</td>
+<td>30289</td>
+</tr>
+<tr>
+<td>1350</td>
+<td>62</td>
+<td>29781</td>
+<td>29158</td>
+<td>30403</td>
+</tr>
+<tr>
+<td>1360</td>
+<td>62</td>
+<td>29894</td>
+<td>29271</td>
+<td>30516</td>
+</tr>
+<tr>
+<td>1370</td>
+<td>63</td>
+<td>30006</td>
+<td>29384</td>
+<td>30629</td>
+</tr>
+<tr>
+<td>1380</td>
+<td>63</td>
+<td>30118</td>
+<td>29495</td>
+<td>30741</td>
+</tr>
+<tr>
+<td>1390</td>
+<td>63</td>
+<td>30230</td>
+<td>29607</td>
+<td>30853</td>
+</tr>
+<tr>
+<td>1400</td>
+<td>63</td>
+<td>30341</td>
+<td>29718</td>
+<td>30965</td>
+</tr>
+<tr>
+<td>1410</td>
+<td>63</td>
+<td>30452</td>
+<td>29829</td>
+<td>31076</td>
+</tr>
+<tr>
+<td>1420</td>
+<td>64</td>
+<td>30563</td>
+<td>29939</td>
+<td>31187</td>
+</tr>
+<tr>
+<td>1430</td>
+<td>64</td>
+<td>30673</td>
+<td>30049</td>
+<td>31297</td>
+</tr>
+<tr>
+<td>1440</td>
+<td>64</td>
+<td>30783</td>
+<td>30159</td>
+<td>31407</td>
+</tr>
+<tr>
+<td>1450</td>
+<td>64</td>
+<td>30892</td>
+<td>30268</td>
+<td>31517</td>
+</tr>
+<tr>
+<td>1460</td>
+<td>65</td>
+<td>31002</td>
+<td>30377</td>
+<td>31626</td>
+</tr>
+<tr>
+<td>1470</td>
+<td>65</td>
+<td>31110</td>
+<td>30485</td>
+<td>31735</td>
+</tr>
+<tr>
+<td>1480</td>
+<td>65</td>
+<td>31219</td>
+<td>30593</td>
+<td>31844</td>
+</tr>
+<tr>
+<td>1490</td>
+<td>65</td>
+<td>31326</td>
+<td>30701</td>
+<td>31952</td>
+</tr>
+<tr>
+<td>1500</td>
+<td>65</td>
+<td>31434</td>
+<td>30808</td>
+<td>32060</td>
+</tr>
+<tr>
+<td>1510</td>
+<td>66</td>
+<td>31541</td>
+<td>30915</td>
+<td>32167</td>
+</tr>
+<tr>
+<td>1520</td>
+<td>66</td>
+<td>31648</td>
+<td>31022</td>
+<td>32274</td>
+</tr>
+<tr>
+<td>1530</td>
+<td>66</td>
+<td>31755</td>
+<td>31128</td>
+<td>32381</td>
+</tr>
+<tr>
+<td>1540</td>
+<td>66</td>
+<td>31861</td>
+<td>31234</td>
+<td>32487</td>
+</tr>
+<tr>
+<td>1550</td>
+<td>67</td>
+<td>31967</td>
+<td>31340</td>
+<td>32593</td>
+</tr>
+<tr>
+<td>1560</td>
+<td>67</td>
+<td>32072</td>
+<td>31445</td>
+<td>32699</td>
+</tr>
+<tr>
+<td>1570</td>
+<td>67</td>
+<td>32177</td>
+<td>31550</td>
+<td>32804</td>
+</tr>
+<tr>
+<td>1580</td>
+<td>67</td>
+<td>32282</td>
+<td>31655</td>
+<td>32909</td>
+</tr>
+<tr>
+<td>1590</td>
+<td>67</td>
+<td>32387</td>
+<td>31759</td>
+<td>33014</td>
+</tr>
+<tr>
+<td>1600</td>
+<td>68</td>
+<td>32491</td>
+<td>31863</td>
+<td>33118</td>
+</tr>
+<tr>
+<td>1610</td>
+<td>68</td>
+<td>32595</td>
+<td>31967</td>
+<td>33222</td>
+</tr>
+<tr>
+<td>1620</td>
+<td>68</td>
+<td>32698</td>
+<td>32070</td>
+<td>33326</td>
+</tr>
+<tr>
+<td>1630</td>
+<td>68</td>
+<td>32801</td>
+<td>32173</td>
+<td>33429</td>
+</tr>
+<tr>
+<td>1640</td>
+<td>69</td>
+<td>32904</td>
+<td>32276</td>
+<td>33533</td>
+</tr>
+<tr>
+<td>1650</td>
+<td>69</td>
+<td>33007</td>
+<td>32378</td>
+<td>33635</td>
+</tr>
+<tr>
+<td>1660</td>
+<td>69</td>
+<td>33109</td>
+<td>32480</td>
+<td>33738</td>
+</tr>
+<tr>
+<td>1670</td>
+<td>69</td>
+<td>33211</td>
+<td>32582</td>
+<td>33840</td>
+</tr>
+<tr>
+<td>1680</td>
+<td>69</td>
+<td>33312</td>
+<td>32683</td>
+<td>33942</td>
+</tr>
+<tr>
+<td>1690</td>
+<td>70</td>
+<td>33414</td>
+<td>32784</td>
+<td>34043</td>
+</tr>
+<tr>
+<td>1700</td>
+<td>70</td>
+<td>33515</td>
+<td>32885</td>
+<td>34144</td>
+</tr>
+<tr>
+<td>1710</td>
+<td>70</td>
+<td>33616</td>
+<td>32986</td>
+<td>34245</td>
+</tr>
+<tr>
+<td>1720</td>
+<td>70</td>
+<td>33716</td>
+<td>33086</td>
+<td>34346</td>
+</tr>
+<tr>
+<td>1730</td>
+<td>70</td>
+<td>33816</td>
+<td>33186</td>
+<td>34446</td>
+</tr>
+<tr>
+<td>1740</td>
+<td>71</td>
+<td>33916</td>
+<td>33286</td>
+<td>34546</td>
+</tr>
+<tr>
+<td>1750</td>
+<td>71</td>
+<td>34016</td>
+<td>33385</td>
+<td>34646</td>
+</tr>
+<tr>
+<td>1760</td>
+<td>71</td>
+<td>34115</td>
+<td>33484</td>
+<td>34746</td>
+</tr>
+<tr>
+<td>1770</td>
+<td>71</td>
+<td>34214</td>
+<td>33583</td>
+<td>34845</td>
+</tr>
+<tr>
+<td>1780</td>
+<td>71</td>
+<td>34313</td>
+<td>33682</td>
+<td>34944</td>
+</tr>
+<tr>
+<td>1790</td>
+<td>72</td>
+<td>34411</td>
+<td>33780</td>
+<td>35042</td>
+</tr>
+<tr>
+<td>1800</td>
+<td>72</td>
+<td>34509</td>
+<td>33878</td>
+<td>35141</td>
+</tr>
+<tr>
+<td>1810</td>
+<td>72</td>
+<td>34607</td>
+<td>33976</td>
+<td>35239</td>
+</tr>
+<tr>
+<td>1820</td>
+<td>72</td>
+<td>34705</td>
+<td>34073</td>
+<td>35336</td>
+</tr>
+<tr>
+<td>1830</td>
+<td>73</td>
+<td>34802</td>
+<td>34170</td>
+<td>35434</td>
+</tr>
+<tr>
+<td>1840</td>
+<td>73</td>
+<td>34899</td>
+<td>34267</td>
+<td>35531</td>
+</tr>
+<tr>
+<td>1850</td>
+<td>73</td>
+<td>34996</td>
+<td>34364</td>
+<td>35628</td>
+</tr>
+<tr>
+<td>1860</td>
+<td>73</td>
+<td>35093</td>
+<td>34460</td>
+<td>35725</td>
+</tr>
+<tr>
+<td>1870</td>
+<td>73</td>
+<td>35189</td>
+<td>34556</td>
+<td>35821</td>
+</tr>
+<tr>
+<td>1880</td>
+<td>74</td>
+<td>35285</td>
+<td>34652</td>
+<td>35918</td>
+</tr>
+<tr>
+<td>1890</td>
+<td>74</td>
+<td>35381</td>
+<td>34748</td>
+<td>36014</td>
+</tr>
+<tr>
+<td>1900</td>
+<td>74</td>
+<td>35476</td>
+<td>34843</td>
+<td>36109</td>
+</tr>
+<tr>
+<td>1910</td>
+<td>74</td>
+<td>35572</td>
+<td>34939</td>
+<td>36205</td>
+</tr>
+<tr>
+<td>1920</td>
+<td>74</td>
+<td>35667</td>
+<td>35033</td>
+<td>36300</td>
+</tr>
+<tr>
+<td>1930</td>
+<td>75</td>
+<td>35762</td>
+<td>35128</td>
+<td>36395</td>
+</tr>
+<tr>
+<td>1940</td>
+<td>75</td>
+<td>35856</td>
+<td>35222</td>
+<td>36490</td>
+</tr>
+<tr>
+<td>1950</td>
+<td>75</td>
+<td>35950</td>
+<td>35317</td>
+<td>36584</td>
+</tr>
+<tr>
+<td>1960</td>
+<td>75</td>
+<td>36044</td>
+<td>35411</td>
+<td>36678</td>
+</tr>
+<tr>
+<td>1970</td>
+<td>75</td>
+<td>36138</td>
+<td>35504</td>
+<td>36772</td>
+</tr>
+<tr>
+<td>1980</td>
+<td>75</td>
+<td>36232</td>
+<td>35598</td>
+<td>36866</td>
+</tr>
+<tr>
+<td>1990</td>
+<td>76</td>
+<td>36325</td>
+<td>35691</td>
+<td>36960</td>
+</tr>
+<tr>
+<td>2000</td>
+<td>76</td>
+<td>36418</td>
+<td>35784</td>
+<td>37053</td>
+</tr>
+</tbody></table>
+</div>
+
+  <footer class="wrap post__foot">
+    
+      <div class="post__tags">
+        <a class="pill pill--link" href="/tags/%E9%A5%A5%E8%8D%92%E8%81%94%E6%9C%BA%E7%89%88/">饥荒联机版</a><a class="pill pill--link" href="/tags/Lua/">Lua</a><a class="pill pill--link" href="/tags/WX-78/">WX-78</a><a class="pill pill--link" href="/tags/%E9%9B%B7%E5%87%BB/">雷击</a><a class="pill pill--link" href="/tags/%E8%B6%85%E8%BD%BD/">超载</a><a class="pill pill--link" href="/tags/%E5%85%AC%E5%BC%8F%E8%AE%A1%E7%AE%97/">公式计算</a>
+      </div>
+    
+
+    
+
+    
+<section class="related" aria-label="相关文章">
+  <p class="related__label">相关文章</p>
+  <ul class="related__list">
+    
+      <li>
+        <a class="related__link" href="/2019/11/diy-dst-cmd/">
+          <span class="related__title">自定义饥荒服务器后台命令<span class="item__arrow" aria-hidden="true">→</span></span>
+          <time class="related__date" datetime="2019-11-17T16:13:00.000Z">2019-11-18</time>
+        </a>
+      </li>
+    
+      <li>
+        <a class="related__link" href="/2019/11/dst-nickname/">
+          <span class="related__title">让您的饥荒昵称看起来更精致<span class="item__arrow" aria-hidden="true">→</span></span>
+          <time class="related__date" datetime="2019-11-14T14:03:00.000Z">2019-11-14</time>
+        </a>
+      </li>
+    
+      <li>
+        <a class="related__link" href="/2019/11/windows-dst-server/">
+          <span class="related__title">Windows 搭建饥荒服务器指南<span class="item__arrow" aria-hidden="true">→</span></span>
+          <time class="related__date" datetime="2019-11-01T10:47:00.000Z">2019-11-01</time>
+        </a>
+      </li>
+    
+  </ul>
+</section>
+
+
+    
+      <nav class="nextprev" aria-label="归档">
+        
+          <a class="nextprev__card" href="/2020/03/aria2-h5ai/" rel="prev">
+            <span class="nextprev__label"><span aria-hidden="true">←</span> 上一篇</span>
+            <span class="nextprev__title">利用 Aria2 及 h5ai 在服务器上搭建影音中心</span>
+          </a>
+        
+
+        
+          <a class="nextprev__card nextprev__card--r" href="/2019/11/diy-dst-cmd/" rel="next">
+            <span class="nextprev__label">下一篇 <span aria-hidden="true">→</span></span>
+            <span class="nextprev__title">自定义饥荒服务器后台命令</span>
+          </a>
+        
+      </nav>
+    
+  </footer>
+</article>
+
+
+
+
+
+</main>
+
+  
+<footer class="foot">
+  <div class="wrap foot__in">
+    <div class="foot__left">
+      
+      <p class="foot__copy">© 2026 辣椒小皇纸</p>
+    </div>
+
+    <div class="foot__right">
+      
+        <a class="foot__link" href="https://github.com/suhuang64" target="_blank" rel="noopener noreferrer">GitHub</a>
+      
+      
+    </div>
+  </div>
+</footer>
+
+
+  
+    <button class="totop" id="totop" type="button" aria-label="回到顶部">
+      <svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true" focusable="false">
+        <path d="M8 3.6l5.2 5.2-1.1 1.1L8.8 6.8V13h-1.6V6.8L3.9 9.9 2.8 8.8z" fill="currentColor"/>
+      </svg>
+    </button>
+  
+
+  
+    
+<div class="shortcuts" id="shortcuts" aria-hidden="true">
+  <p class="shortcuts__label">快捷键</p>
+  <ul class="shortcuts__list">
+    <li><kbd>Shift</kbd><span>+</span><kbd>T</kbd><span class="shortcuts__text">切换主题</span></li>
+    <li><kbd>Shift</kbd><span>+</span><kbd>H</kbd><span class="shortcuts__text">回到首页</span></li>
+    <li><kbd>Shift</kbd><span>+</span><kbd>R</kbd><span class="shortcuts__text">随机文章</span></li>
+  </ul>
+</div>
+
+  
+
+  
+    <script type="application/json" id="post-index">["/2019/09/linux-screen/","/2019/09/linux-dst-server/","/2019/09/ubuntu-sudo-no-password/","/2019/09/gitee-hexo/","/2019/11/windows-dst-server/","/2019/11/diy-dst-cmd/","/dst/","/2019/11/dst-nickname/","/2020/02/dst-wx78/","/2020/03/aria2-h5ai/","/2020/05/github-action-hexo/","/2020/08/python-mail/","/2020/08/openvpn","/2020/09/sublime-text-date-time/","/2023/08/sklearn-paramenter-tune/","/2020/08/frp/","/2020/07/r-mice/","/2023/08/sklearn-regression-algorithm/","/2026/08/compress-pdf-with-python/","/2024/09/mongorestore/","/2026/08/github-pull-request/"]</script>
+  
+
+  <script src="/js/main.js" defer></script>
+</body>
+</html>

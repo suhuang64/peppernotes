@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+
+  
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#fcfcfb" media="(prefers-color-scheme: light)" id="tc-light">
+  <meta name="theme-color" content="#171715" media="(prefers-color-scheme: dark)" id="tc-dark">
+
+  <script>
+    (function () {
+      var root = document.documentElement;
+      var key  = 'idyll-theme';
+
+      root.classList.add('js');
+
+      var saved = null;
+      try { saved = localStorage.getItem(key); } catch (err) {}
+
+      var tcLight = document.getElementById('tc-light');
+      var tcDark  = document.getElementById('tc-dark');
+      var colors  = { light: '#fcfcfb', dark: '#171715' };
+
+      function syncChrome(mode) {
+        if (tcLight && tcDark) {
+          var c = colors[mode] || null;
+          tcLight.content = c || '#fcfcfb';
+          tcDark.content  = c || '#171715';
+        }
+      }
+
+      if (saved === 'light' || saved === 'dark') {
+        root.setAttribute('data-theme', saved);
+        syncChrome(saved);
+      }
+
+      function wire() {
+        var btn = document.getElementById('theme');
+        if (!btn) return;
+
+        var state = document.getElementById('theme-state');
+
+        function paint(mode) {
+          if (mode) root.setAttribute('data-theme', mode);
+          else root.removeAttribute('data-theme');
+
+          if (state) state.textContent = btn.getAttribute('data-' + (mode || 'auto'));
+
+          syncChrome(mode);
+
+          try {
+            if (mode) localStorage.setItem(key, mode);
+            else localStorage.removeItem(key);
+          } catch (err) {}
+
+          
+          document.dispatchEvent(new CustomEvent('idyll:theme', { detail: mode || 'auto' }));
+        }
+
+        btn.addEventListener('click', function () {
+          var cur     = root.getAttribute('data-theme') || '';
+          var sysDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+          if (cur === '') paint(sysDark ? 'light' : 'dark');
+          else if (cur === 'light') paint('dark');
+          else paint('');
+        });
+
+        paint(root.getAttribute('data-theme') || '');
+      }
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', wire);
+      } else {
+        wire();
+      }
+    })();
+  </script>
+
+  <title>饥荒『荒野求生』服务器说明 · 辣椒手记</title>
+  <meta name="description" content="欢迎来到荒野求生多层档">
+  <meta name="author" content="辣椒小皇纸">
+  
+
+  <meta name="description" content="欢迎来到荒野求生多层档">
+<meta property="og:type" content="article">
+<meta property="og:title" content="饥荒『荒野求生』服务器说明 · 辣椒手记">
+<meta property="og:url" content="https://peppernotes.top/dst/index.html">
+<meta property="og:site_name" content="辣椒手记">
+<meta property="og:description" content="欢迎来到荒野求生多层档">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2019-09-18T03:30:00.000Z">
+<meta property="article:modified_time" content="2026-08-19T16:00:00.000Z">
+<meta property="article:author" content="辣椒小皇纸">
+<meta property="article:tag" content="冒险世界">
+<meta property="article:tag" content="多世界">
+<meta property="article:tag" content="新手指南">
+<meta property="article:tag" content="服务器规则">
+<meta property="article:tag" content="角斗场">
+<meta property="article:tag" content="饥荒联机版">
+<meta name="twitter:card" content="summary">
+  
+  <link rel="canonical" href="https://peppernotes.top/dst/">
+  <link rel="icon" href="/images/favicon.svg" type="image/svg+xml">
+  
+
+  <link rel="stylesheet" href="/css/style.css">
+  
+
+<meta name="generator" content="Hexo 8.1.2"></head>
+
+<body data-idyll="copy anchor ext toc shortcut"
+      data-copy="复制"
+      data-copied="已复制"
+      data-copyfail="请按 Ctrl+C"
+      data-anchor="链接到这一节">
+
+  
+    <div class="progress" id="progress" aria-hidden="true"><i></i></div>
+  
+
+  <a class="skip" href="#main">跳到正文</a>
+
+  <header class="nav" id="nav">
+  <div class="wrap nav__in">
+    <a class="nav__brand" href="/">
+      <span class="nav__mark" aria-hidden="true"></span>
+      <span class="nav__name">辣椒手记</span>
+    </a>
+
+    <div class="nav__right">
+      <nav class="nav__links" aria-label="站点导航">
+        
+          <a class="nav__link"
+             href="/">首页</a>
+        
+          <a class="nav__link"
+             href="/archives/">归档</a>
+        
+          <a class="nav__link"
+             href="/categories/">分类</a>
+        
+          <a class="nav__link"
+             href="/tags/">标签</a>
+        
+          <a class="nav__link"
+             href="/series/">系列</a>
+        
+          <a class="nav__link"
+             href="/about/">关于</a>
+        
+      </nav>
+
+      
+        
+        <button class="theme" id="theme" type="button"
+                data-auto="跟随系统"
+                data-light="亮色"
+                data-dark="暗色">
+          <svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true" focusable="false">
+            <g class="theme__ico theme__ico--auto">
+              <circle cx="8" cy="8" r="5.6" fill="none" stroke="currentColor" stroke-width="1.4"/>
+              <path d="M8 2.4a5.6 5.6 0 0 0 0 11.2z" fill="currentColor"/>
+            </g>
+            <g class="theme__ico theme__ico--light"
+               fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round">
+              <circle cx="8" cy="8" r="3.1"/>
+              <path d="M8 1.3v1.3M8 13.4v1.3M14.7 8h-1.3M2.6 8H1.3M12.74 3.26l-.92.92M4.18 11.82l-.92.92M12.74 12.74l-.92-.92M4.18 4.18l-.92-.92"/>
+            </g>
+            <g class="theme__ico theme__ico--dark">
+              <path d="M14 8.53A6 6 0 1 1 7.47 2 4.67 4.67 0 0 0 14 8.53z"
+                    fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
+            </g>
+          </svg>
+          
+          <span class="sr-only" id="theme-state" aria-live="polite">跟随系统</span>
+        </button>
+      
+    </div>
+  </div>
+</header>
+
+
+  <main class="main" id="main">
+
+<article class="post">
+  <header class="wrap post__head">
+    
+      <p class="post__kicker">
+        <a href="/categories/%E6%B8%B8%E6%88%8F/">游戏</a><span class="sep">/</span><a href="/categories/%E6%B8%B8%E6%88%8F/%E9%A5%A5%E8%8D%92/">饥荒</a>
+      </p>
+    
+
+    <h1 class="post__title">饥荒『荒野求生』服务器说明</h1>
+
+    <div class="post__meta">
+      
+      <time datetime="2019-09-18T03:30:00.000Z"><span class="sr-only">发布于 </span>2019-09-18</time>
+      
+        <span class="dot" aria-hidden="true">·</span>
+        <span>3,935 字</span>
+      
+      
+        <span class="dot" aria-hidden="true">·</span>
+        <span>13 分钟</span>
+      
+      
+        <span class="dot" aria-hidden="true">·</span>
+        <span>更新于 2026-08-20</span>
+      
+    </div>
+  </header>
+
+  
+<nav class="toc" aria-label="目录">
+  <p class="toc__label">目录</p>
+  <ol class="toc__list">
+    
+      <li>
+        <a class="toc__link" href="#欢迎来到荒野求生多层档" data-toc-id="欢迎来到荒野求生多层档" title="欢迎来到荒野求生多层档">欢迎来到荒野求生多层档</a>
+        
+      </li>
+    
+      <li>
+        <a class="toc__link" href="#新玩家开始游戏" data-toc-id="新玩家开始游戏" title="新玩家开始游戏">新玩家开始游戏</a>
+        
+      </li>
+    
+      <li>
+        <a class="toc__link" href="#八个世界" data-toc-id="八个世界" title="八个世界">八个世界</a>
+        
+      </li>
+    
+      <li>
+        <a class="toc__link" href="#所有世界都要注意" data-toc-id="所有世界都要注意" title="所有世界都要注意">所有世界都要注意</a>
+        
+          <ol class="toc__list toc__list--sub">
+            
+              <li><a class="toc__link toc__link--sub" href="#鸟书和鱼书" data-toc-id="鸟书和鱼书" title="鸟书和鱼书">鸟书和鱼书</a></li>
+            
+              <li><a class="toc__link toc__link--sub" href="#自动堆叠" data-toc-id="自动堆叠" title="自动堆叠">自动堆叠</a></li>
+            
+          </ol>
+        
+      </li>
+    
+      <li>
+        <a class="toc__link" href="#小偷包：锁定和分享" data-toc-id="小偷包：锁定和分享" title="小偷包：锁定和分享">小偷包：锁定和分享</a>
+        
+      </li>
+    
+      <li>
+        <a class="toc__link" href="#牛和船" data-toc-id="牛和船" title="牛和船">牛和船</a>
+        
+          <ol class="toc__list toc__list--sub">
+            
+              <li><a class="toc__link toc__link--sub" href="#回收牛" data-toc-id="回收牛" title="回收牛">回收牛</a></li>
+            
+              <li><a class="toc__link toc__link--sub" href="#回收船" data-toc-id="回收船" title="回收船">回收船</a></li>
+            
+          </ol>
+        
+      </li>
+    
+      <li>
+        <a class="toc__link" href="#迷你家园" data-toc-id="迷你家园" title="迷你家园">迷你家园</a>
+        
+      </li>
+    
+      <li>
+        <a class="toc__link" href="#金币、商店和仓库" data-toc-id="金币、商店和仓库" title="金币、商店和仓库">金币、商店和仓库</a>
+        
+          <ol class="toc__list toc__list--sub">
+            
+              <li><a class="toc__link toc__link--sub" href="#签到" data-toc-id="签到" title="签到">签到</a></li>
+            
+              <li><a class="toc__link toc__link--sub" href="#商店" data-toc-id="商店" title="商店">商店</a></li>
+            
+              <li><a class="toc__link toc__link--sub" href="#私人仓库" data-toc-id="私人仓库" title="私人仓库">私人仓库</a></li>
+            
+              <li><a class="toc__link toc__link--sub" href="#邮箱和订单" data-toc-id="邮箱和订单" title="邮箱和订单">邮箱和订单</a></li>
+            
+              <li><a class="toc__link toc__link--sub" href="#彩票" data-toc-id="彩票" title="彩票">彩票</a></li>
+            
+          </ol>
+        
+      </li>
+    
+      <li>
+        <a class="toc__link" href="#冒险世界" data-toc-id="冒险世界" title="冒险世界">冒险世界</a>
+        
+      </li>
+    
+      <li>
+        <a class="toc__link" href="#角斗场" data-toc-id="角斗场" title="角斗场">角斗场</a>
+        
+          <ol class="toc__list toc__list--sub">
+            
+              <li><a class="toc__link toc__link--sub" href="#开始前必须知道" data-toc-id="开始前必须知道" title="开始前必须知道">开始前必须知道</a></li>
+            
+              <li><a class="toc__link toc__link--sub" href="#角斗场龙鳞箱" data-toc-id="角斗场龙鳞箱" title="角斗场龙鳞箱">角斗场龙鳞箱</a></li>
+            
+          </ol>
+        
+      </li>
+    
+      <li>
+        <a class="toc__link" href="#地面清理和船清理" data-toc-id="地面清理和船清理" title="地面清理和船清理">地面清理和船清理</a>
+        
+      </li>
+    
+      <li>
+        <a class="toc__link" href="#常用聊天命令" data-toc-id="常用聊天命令" title="常用聊天命令">常用聊天命令</a>
+        
+      </li>
+    
+      <li>
+        <a class="toc__link" href="#管理员和维护指令" data-toc-id="管理员和维护指令" title="管理员和维护指令">管理员和维护指令</a>
+        
+          <ol class="toc__list toc__list--sub">
+            
+              <li><a class="toc__link toc__link--sub" href="#传送门维护" data-toc-id="传送门维护" title="传送门维护">传送门维护</a></li>
+            
+          </ol>
+        
+      </li>
+    
+      <li>
+        <a class="toc__link" href="#最后提醒" data-toc-id="最后提醒" title="最后提醒">最后提醒</a>
+        
+      </li>
+    
+  </ol>
+</nav>
+
+
+  <div class="wrap prose" id="content"><h2 id="欢迎来到荒野求生多层档"><a href="#欢迎来到荒野求生多层档" class="headerlink" title="欢迎来到荒野求生多层档"></a>欢迎来到荒野求生多层档</h2><span id="more"></span>
+
+<p>这是一组长期运行的《饥荒：联机版》生存世界，适合长期建家、养老，也有冒险和挑战玩法。本文只介绍新玩家实际需要知道的规则和功能。</p>
+<ul>
+<li>服务器名：<strong>荒野求生多层档</strong></li>
+<li>服务器上限：64 人；生存模式；普通世界关闭玩家互伤</li>
+<li>服务器无人时会暂停世界时间</li>
+<li>当前为人物不删档服务器，不接受玩家投票回档或重置世界</li>
+<li>玩家交流群：<strong>762110584（荒野求生饥荒交流群）</strong></li>
+</ul>
+<p>服务器问题、世界异常，或者遇到烧家、偷东西等情况，请在群里反馈，并尽量附上玩家名、世界名和事情发生的大致时间。</p>
+<h2 id="新玩家开始游戏"><a href="#新玩家开始游戏" class="headerlink" title="新玩家开始游戏"></a>新玩家开始游戏</h2><ol>
+<li>先进入<strong>萌新天堂</strong>或<strong>萌新地洞</strong>熟悉玩法。玩家累计生存天数达到 100 天后，才能前往长期地面、长期地洞和迷你家园。</li>
+<li>游戏右下角的<strong>公告</strong>按钮里有服务器公告、活动和部分玩法说明；商店、彩票、邮箱、订单等功能也都在右下角按钮中。</li>
+<li>推荐订阅创意工坊模组：<a target="_blank" rel="noopener" href="https://steamcommunity.com/sharedfiles/filedetails/?id=496330801">荒野求生直连</a>。它可以更方便地直连服务器，并提供字体和签到额外奖励。</li>
+</ol>
+<p>服务器模组会持续调整，本文中的规则以游戏内提示和最新公告为准。</p>
+<h2 id="八个世界"><a href="#八个世界" class="headerlink" title="八个世界"></a>八个世界</h2><table>
+<thead>
+<tr>
+<th>世界</th>
+<th>适合做什么</th>
+<th>进入条件或提醒</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>挂机天堂</strong></td>
+<td>挂机、暂时离开电脑</td>
+<td>适合让角色安全停留；人物换人等操作优先在这里进行</td>
+</tr>
+<tr>
+<td><strong>萌新天堂</strong></td>
+<td>新玩家的地面生存</td>
+<td>死亡复活不会受到最大生命值下降惩罚；每位玩家最多保留 3 只狗</td>
+</tr>
+<tr>
+<td><strong>萌新地洞</strong></td>
+<td>新玩家的地下生存</td>
+<td>与萌新天堂一起作为前期主要活动区域</td>
+</tr>
+<tr>
+<td><strong>长期地面</strong></td>
+<td>长期建家、发展基地</td>
+<td>玩家生存天数达到 100 天后开放</td>
+</tr>
+<tr>
+<td><strong>长期地洞</strong></td>
+<td>长期地下基地、远古区域</td>
+<td>玩家生存天数达到 100 天后开放</td>
+</tr>
+<tr>
+<td><strong>迷你家园</strong></td>
+<td>建造自己的私人小家</td>
+<td>玩家生存天数达到 100 天后开放；每位玩家有自己的家园空间</td>
+</tr>
+<tr>
+<td><strong>冒险世界</strong></td>
+<td>打怪、挑战 Boss、赚取金币和积分</td>
+<td>危险的副本世界，萌新进入前请先准备好装备和补给</td>
+</tr>
+<tr>
+<td><strong>角斗场</strong></td>
+<td>组队闯关</td>
+<td>当前实际可用的是闯关模式，详情见下文</td>
+</tr>
+</tbody></table>
+<p>玩家天数少于 100 天时，可以在挂机天堂、萌新天堂、萌新地洞、冒险世界和角斗场之间移动；达到 100 天后，八个世界都可以前往。</p>
+<h2 id="所有世界都要注意"><a href="#所有世界都要注意" class="headerlink" title="所有世界都要注意"></a>所有世界都要注意</h2><ul>
+<li>服务器会记录部分公共容器的存取变化，例如普通箱子、龙鳞箱、冰箱、盐盒、蘑菇灯、冬季树和书架等；不要未经允许拿走或消耗别人的物品。</li>
+<li>破坏、烧毁公共设施时会有游戏内提醒，相关记录也会保留。使用设施后请恢复原样，公共资源请适量取用。</li>
+<li>服务器没有玩家互伤功能，但这不代表可以破坏建筑、烧家或恶意拿取物品。</li>
+<li><code>Alt</code> + 鼠标左键可以查看包裹、礼物等容器中的内容；查看地上的小偷包或绑定物品时，也可以用这个方法确认主人。</li>
+<li>灯饰和启迪之冠碎片这类特殊物品，第一次被玩家捡起后会绑定该玩家；其他玩家拿到后会自动掉落，请不要强行拾取别人的绑定物品。</li>
+<li>地洞远古钥匙如果确实因为 bug 消失，可以看本文最后的 <code>+key</code> 说明。</li>
+</ul>
+<h3 id="鸟书和鱼书"><a href="#鸟书和鱼书" class="headerlink" title="鸟书和鱼书"></a>鸟书和鱼书</h3><ul>
+<li>迷你家园内不能使用鸟书和鱼书。</li>
+<li>其他世界在每天 <strong>01:00–08:59</strong> 可以连续使用；其他时间段每次使用后需要等待 20 秒。</li>
+</ul>
+<h3 id="自动堆叠"><a href="#自动堆叠" class="headerlink" title="自动堆叠"></a>自动堆叠</h3><p>服务器启用了自动堆叠模组，但当前是以下规则：</p>
+<ul>
+<li>世界生成或生物、可工作物掉落的可堆叠物品，会在附近约 10 格范围内自动合并。</li>
+<li>自动拾取功能关闭，物品不会因为靠近玩家就自动进入背包。</li>
+<li>玩家手动丢到地上的物品不会自动合并；需要整理时请手动放入容器或堆叠。</li>
+</ul>
+<h2 id="小偷包：锁定和分享"><a href="#小偷包：锁定和分享" class="headerlink" title="小偷包：锁定和分享"></a>小偷包：锁定和分享</h2><p>这里说的小偷包是<strong>坎普斯背包</strong>。穿在身上时，在聊天窗口对自己私聊输入命令：</p>
+<table>
+<thead>
+<tr>
+<th>命令</th>
+<th>用途</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>+lock</code></td>
+<td>锁定当前身上的小偷包，别人不能背走</td>
+</tr>
+<tr>
+<td><code>+unlock</code></td>
+<td>解锁自己的小偷包，并清除全部分享权限</td>
+</tr>
+<tr>
+<td><code>+share KU_XXXXXXXX</code></td>
+<td>把当前小偷包分享给同一世界的一名玩家；将示例 ID 换成对方的 Klei ID</td>
+</tr>
+<tr>
+<td><code>+unshare KU_XXXXXXXX</code></td>
+<td>取消对该玩家的分享</td>
+</tr>
+<tr>
+<td><code>+showshares</code></td>
+<td>查看当前小偷包分享给了谁</td>
+</tr>
+</tbody></table>
+<p>注意：</p>
+<ul>
+<li>命令要在<strong>私聊</strong>中输入，不是控制台命令；格式不要多空格。</li>
+<li>上锁前请取出远古钥匙、眼骨等独一无二的物品；锁定的小偷包不能接收这类物品。</li>
+<li>空的小偷包即使上锁，其他玩家仍可能捡起；不要把空包当作防盗证明。</li>
+<li>分享权限只对当前世界在线玩家生效。对方可以背起你分享的小偷包，但不能替你修改锁定权限。</li>
+</ul>
+<h2 id="牛和船"><a href="#牛和船" class="headerlink" title="牛和船"></a>牛和船</h2><h3 id="回收牛"><a href="#回收牛" class="headerlink" title="回收牛"></a>回收牛</h3><p>快速连续双击牛可以先查看状态，再尝试将牛回收成牛角。回收必须满足：</p>
+<ul>
+<li>驯化度至少 30%；</li>
+<li>顺从度至少 45%；</li>
+<li>生命值大于 100；</li>
+<li>如果牛有牛铃，牛铃必须在牛主人身上。</li>
+</ul>
+<p>成功后牛会变成牛角，吹响牛角即可在附近重新召唤，并保留牛的名字、倾向、鞍和牛铃信息。牛角属于重要物品，请不要随手丢在地上。</p>
+<h3 id="回收船"><a href="#回收船" class="headerlink" title="回收船"></a>回收船</h3><p>船上放好<strong>船舵</strong>后，右键船舵即可尝试把整条船收成船套装。回收前必须确认：</p>
+<ul>
+<li>船已经靠岸；</li>
+<li>船上只有你一名玩家；</li>
+<li>船上最多 4 个箱子；</li>
+<li>船的生命值不低于 10；</li>
+<li>船上没有无法保存的生物、植物、影灯、假人等物体，也没有装着重要物品、船套装或牛铃的容器。</li>
+</ul>
+<p>船套装会保存船上的建筑和船的耐久。每位玩家最多携带 <strong>2 个已经回收的船套装</strong>，超过数量的船套装会被丢下。船套装放在物品栏第一格后，私聊输入：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">+rename 船名</span><br></pre></td></tr></table></figure>
+
+<p>船名必须全部使用中文。下线时如果船上只有你，服务器会尝试收锚或收帆，减少船漂走的情况。</p>
+<h2 id="迷你家园"><a href="#迷你家园" class="headerlink" title="迷你家园"></a>迷你家园</h2><p>迷你家园适合建造自己的私人基地：可以部署自己的布局，平时关闭时其他玩家看不到家园内部。</p>
+<ul>
+<li>每位玩家有一个免费的个人家园；家园世界达到开放条件后，在影灯处打开家园面板进行部署、回收和管理。</li>
+<li>一个家园最多约 1000 个可直接交互的实体；超过上限时会随机删除到上限以内。容器里的物品不按实体数量计算，但仍建议不要无节制堆放设施。</li>
+<li>家园上传前不能有堆叠在同一位置的作物，否则上传会失败；请先把作物分开。</li>
+<li>家园中存在部分不支持保存的物体时可能无法回收，回收时请以游戏提示为准。</li>
+<li>迷你家园不能使用鸟书和鱼书。</li>
+</ul>
+<h2 id="金币、商店和仓库"><a href="#金币、商店和仓库" class="headerlink" title="金币、商店和仓库"></a>金币、商店和仓库</h2><p>游戏右下角可以打开<strong>商店、彩票、邮箱、订单</strong>等面板。金币和物品奖励通常会通过邮箱发放，完成操作后记得打开邮箱领取。</p>
+<h3 id="签到"><a href="#签到" class="headerlink" title="签到"></a>签到</h3><ul>
+<li>当天在线累计达到 30 分钟后，可以在公告面板签到。</li>
+<li>基础签到奖励为每天 5–10 金币；订阅直连模组通常可额外获得 3 金币。</li>
+<li>每天只能签到一次，奖励会发到邮箱。</li>
+</ul>
+<h3 id="商店"><a href="#商店" class="headerlink" title="商店"></a>商店</h3><ul>
+<li>点击魔法一本可以把物品上架；每人最多同时上架 50 件。</li>
+<li>卖家上架时收取售价的 1% 手续费，买家购买时另收售价的 5% 手续费。</li>
+<li>上架超过 5400 个游戏日后，商品价格会归零；超过 10800 个游戏日后会被删除。长期不卖的商品请及时取回或重新上架。</li>
+<li>角斗场内不能使用普通商店。</li>
+</ul>
+<h3 id="私人仓库"><a href="#私人仓库" class="headerlink" title="私人仓库"></a>私人仓库</h3><ul>
+<li>第一次开通可以免费使用 7 个现实日。</li>
+<li>之后每次续费 100 金币，增加 30 个现实日。</li>
+<li>仓库物品不会因为到期而删除；到期后只是不能存取，续费后可以继续使用。</li>
+<li>在洞穴出入口或大门附近打开仓库面板。存入物品使用魔法一本，仓库中的物品也可以通过右键发送到其他玩家的邮箱。</li>
+<li>请保管好自己的仓库 ID 和密码；共享仓库请先联系服主登记共享玩家。</li>
+<li>角斗场不能打开普通仓库，也不能在角斗场内取回普通邮箱物品。</li>
+</ul>
+<h3 id="邮箱和订单"><a href="#邮箱和订单" class="headerlink" title="邮箱和订单"></a>邮箱和订单</h3><ul>
+<li>邮箱可以收取金币、物品和文字邮件，也可以给其他玩家发邮件。</li>
+<li>邮件保存 90 个现实日，重要邮件请及时领取。</li>
+<li>订单面板可以发布“求购某物品”的需求，也可以接受其他玩家的订单。订单完成后，物品会通过邮箱发送给发布者，接单者的金币也会通过邮箱发放。</li>
+<li>发布订单时会暂存订单金额和手续费；取消订单后按系统提示返还。提交物品前请确认数量、耐久和新鲜度符合订单要求。</li>
+</ul>
+<h3 id="彩票"><a href="#彩票" class="headerlink" title="彩票"></a>彩票</h3><ul>
+<li>每天 <strong>08:00–19:59</strong> 购买彩票，<strong>20:00–23:59</strong> 兑奖。</li>
+<li>每注 0.2 金币；选择三位号码和购买数量。</li>
+<li>三位号码全部按位命中时，每注奖励 100 金币；两位按位命中时，每注奖励 10 金币。</li>
+<li>彩票只在购买当天有效，过期不能兑奖。</li>
+</ul>
+<h2 id="冒险世界"><a href="#冒险世界" class="headerlink" title="冒险世界"></a>冒险世界</h2><p>冒险世界是专门的打怪副本，不建议刚加入就进入。当前主要规则如下：</p>
+<ul>
+<li>世界持续下雨，所有生物都会敌视玩家，怪物也比普通世界更强，并且有额外的精神值压力。</li>
+<li>宝石类装备和武器会被禁用或自动脱落，懒人魔杖除外；眼球塔和投石机不能正常使用。</li>
+<li>Boss 分为旅者、专家、大师、传奇四个等级，刷新数量和奖励不同。</li>
+<li>每天最多通过冒险世界获得 10 金币。击杀奖励按造成的伤害和附近参与者分配，不是最后一击独享。</li>
+<li>Boss 死亡的服务器公告出现前不要离开奖励范围；鬼魂不能获得这次奖励。</li>
+<li>冒险世界可以在右下角的<strong>积分兑换</strong>面板兑换物品、金币、仓库时间、迷你家园时间和称号。积分没有总上限，具体奖励以面板显示为准。</li>
+</ul>
+<h2 id="角斗场"><a href="#角斗场" class="headerlink" title="角斗场"></a>角斗场</h2><p>角斗场当前真正可用的是<strong>闯关模式</strong>，最多 2 人参加，共 16 关。</p>
+<h3 id="开始前必须知道"><a href="#开始前必须知道" class="headerlink" title="开始前必须知道"></a>开始前必须知道</h3><p><strong>闯关开始时会清空场内参赛者身上的物品、装备和临时状态。请不要带入贵重物品、小偷包、牛角、船套装或其他需要保留的物品。</strong></p>
+<p>进入角斗场后玩家会变成芜猴；比赛开始时，场内所有参赛者都必须是芜猴，否则比赛会终止。闯关途中死亡或离开场地也可能导致比赛结束。</p>
+<p>通关奖励按关卡发放：第 1–9 关每关 0.5 金币，第 10 关 1 金币，第 11–15 关每关 0.5 金币，第 16 关 2 金币。积分和历史记录可以在积分兑换面板查看。</p>
+<p>选择界面中虽然还能看到<strong>无尽、选怪、PVP</strong>按钮，但当前代码没有对应的实际玩法，请选择闯关模式。</p>
+<h3 id="角斗场龙鳞箱"><a href="#角斗场龙鳞箱" class="headerlink" title="角斗场龙鳞箱"></a>角斗场龙鳞箱</h3><p>站在龙鳞箱旁，在私聊中输入 <code>+lockc</code> 可以锁定箱子，锁定有效期 180 分钟；箱子主人输入 <code>+unlockc</code> 可以解锁。锁箱后可以使用 <code>Alt</code> + 鼠标左键查看主人。</p>
+<h2 id="地面清理和船清理"><a href="#地面清理和船清理" class="headerlink" title="地面清理和船清理"></a>地面清理和船清理</h2><p>为了控制世界中的垃圾数量，除挂机天堂和角斗场外的世界会定期清理：</p>
+<ul>
+<li>每 20 个游戏日检查一次地面散落物；不在保护范围或保护名单内、并连续两次检查都留在地面的物品，可能会被清理。</li>
+<li>海上漂浮的物品也可能被清理。玩家背包、容器内部和服务器保护的特殊物品通常不会受影响，但不要把重要物品长期丢在地上。</li>
+<li>船连续约 540 个游戏日（按当前换算约 3 个现实日）没有玩家使用，可能会被自动删除。长期不用的船请及时收回成船套装。</li>
+</ul>
+<h2 id="常用聊天命令"><a href="#常用聊天命令" class="headerlink" title="常用聊天命令"></a>常用聊天命令</h2><p>以下命令都要在<strong>聊天窗口的私聊</strong>中输入，不是控制台；命令和参数不要添加额外字符。</p>
+<table>
+<thead>
+<tr>
+<th>命令</th>
+<th>使用场景</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>+lock</code> &#x2F; <code>+unlock</code></td>
+<td>锁定或解锁自己身上的小偷包</td>
+</tr>
+<tr>
+<td><code>+share KU_XXXXXXXX</code></td>
+<td>分享小偷包给当前世界的一名玩家</td>
+</tr>
+<tr>
+<td><code>+unshare KU_XXXXXXXX</code></td>
+<td>取消小偷包分享</td>
+</tr>
+<tr>
+<td><code>+showshares</code></td>
+<td>查看小偷包分享名单</td>
+</tr>
+<tr>
+<td><code>+rename 船名</code></td>
+<td>给第一格船套装改名，船名必须全中文</td>
+</tr>
+<tr>
+<td><code>+key</code></td>
+<td>仅在地洞远古钥匙确实消失、且世界中没有钥匙或远古守护者时尝试找回</td>
+</tr>
+<tr>
+<td><code>+lockc</code> &#x2F; <code>+unlockc</code></td>
+<td>在角斗场锁定或解锁龙鳞箱</td>
+</tr>
+</tbody></table>
+<h2 id="管理员和维护指令"><a href="#管理员和维护指令" class="headerlink" title="管理员和维护指令"></a>管理员和维护指令</h2><p>下面的管理员命令必须由服务器管理员在<strong>公共聊天</strong>中输入，不是私聊。普通玩家输入不会执行；命令中的玩家名不要加空格，建议写完整，避免误匹配多人。</p>
+<table>
+<thead>
+<tr>
+<th>命令</th>
+<th>作用</th>
+<th>注意</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>+reset</code></td>
+<td>先保存当前世界，再重启到最新存档</td>
+<td>只重启当前世界，不会删除或重新生成世界；执行前应先提醒当前世界的玩家</td>
+</tr>
+<tr>
+<td><code>+kick玩家名</code></td>
+<td>踢出匹配到的普通玩家</td>
+<td>支持玩家名部分匹配，可能同时踢出多个匹配者；管理员不会被踢出</td>
+</tr>
+<tr>
+<td><code>+kill玩家名</code></td>
+<td>杀死匹配到的普通玩家角色</td>
+<td>支持玩家名部分匹配，可能同时影响多个匹配者；管理员不会被击杀</td>
+</tr>
+</tbody></table>
+<h3 id="传送门维护"><a href="#传送门维护" class="headerlink" title="传送门维护"></a>传送门维护</h3><p><code>+cave</code> 用于重新注册各世界之间的传送门。它不是管理员专属命令，但只应在洞口或世界连接异常时使用；执行后服务器会提示洞口已重新连接。</p>
+<p>管理员还可以登录服务器管理后台查看八个世界的运行状态，或执行整服更新、重启。整服重启会让所有世界暂时中断，应在维护前通知玩家；后台账号和密码不要在游戏内或本文公开。</p>
+<h2 id="最后提醒"><a href="#最后提醒" class="headerlink" title="最后提醒"></a>最后提醒</h2><p>这是长期存档服务器。请把贵重物品放进自己的容器、仓库或邮箱，离开船和基地前确认火源、船锚及重要物品；不确定某个功能时先看公告或在群里询问。祝大家在荒野求生中玩得开心。</p>
+</div>
+
+  <footer class="wrap post__foot">
+    
+      <div class="post__tags">
+        <a class="pill pill--link" href="/tags/%E9%A5%A5%E8%8D%92%E8%81%94%E6%9C%BA%E7%89%88/">饥荒联机版</a><a class="pill pill--link" href="/tags/%E5%A4%9A%E4%B8%96%E7%95%8C/">多世界</a><a class="pill pill--link" href="/tags/%E6%9C%8D%E5%8A%A1%E5%99%A8%E8%A7%84%E5%88%99/">服务器规则</a><a class="pill pill--link" href="/tags/%E6%96%B0%E6%89%8B%E6%8C%87%E5%8D%97/">新手指南</a><a class="pill pill--link" href="/tags/%E5%86%92%E9%99%A9%E4%B8%96%E7%95%8C/">冒险世界</a><a class="pill pill--link" href="/tags/%E8%A7%92%E6%96%97%E5%9C%BA/">角斗场</a>
+      </div>
+    
+
+    
+
+    
+<section class="related" aria-label="相关文章">
+  <p class="related__label">相关文章</p>
+  <ul class="related__list">
+    
+      <li>
+        <a class="related__link" href="/2020/02/dst-wx78/">
+          <span class="related__title">饥荒联机版 WX-78 雷击超载时间计算公式<span class="item__arrow" aria-hidden="true">→</span></span>
+          <time class="related__date" datetime="2020-02-28T10:49:00.000Z">2020-02-28</time>
+        </a>
+      </li>
+    
+      <li>
+        <a class="related__link" href="/2019/11/diy-dst-cmd/">
+          <span class="related__title">自定义饥荒服务器后台命令<span class="item__arrow" aria-hidden="true">→</span></span>
+          <time class="related__date" datetime="2019-11-17T16:13:00.000Z">2019-11-18</time>
+        </a>
+      </li>
+    
+      <li>
+        <a class="related__link" href="/2019/11/dst-nickname/">
+          <span class="related__title">让您的饥荒昵称看起来更精致<span class="item__arrow" aria-hidden="true">→</span></span>
+          <time class="related__date" datetime="2019-11-14T14:03:00.000Z">2019-11-14</time>
+        </a>
+      </li>
+    
+  </ul>
+</section>
+
+
+    
+      <nav class="nextprev" aria-label="归档">
+        
+          <a class="nextprev__card" href="/2019/09/linux-dst-server/" rel="prev">
+            <span class="nextprev__label"><span aria-hidden="true">←</span> 上一篇</span>
+            <span class="nextprev__title">Linux 搭建饥荒服务器指南</span>
+          </a>
+        
+
+        <span></span>
+      </nav>
+    
+  </footer>
+</article>
+
+
+
+
+
+</main>
+
+  
+<footer class="foot">
+  <div class="wrap foot__in">
+    <div class="foot__left">
+      
+      <p class="foot__copy">© 2026 辣椒小皇纸</p>
+    </div>
+
+    <div class="foot__right">
+      
+        <a class="foot__link" href="https://github.com/suhuang64" target="_blank" rel="noopener noreferrer">GitHub</a>
+      
+      
+    </div>
+  </div>
+</footer>
+
+
+  
+    <button class="totop" id="totop" type="button" aria-label="回到顶部">
+      <svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true" focusable="false">
+        <path d="M8 3.6l5.2 5.2-1.1 1.1L8.8 6.8V13h-1.6V6.8L3.9 9.9 2.8 8.8z" fill="currentColor"/>
+      </svg>
+    </button>
+  
+
+  
+    
+<div class="shortcuts" id="shortcuts" aria-hidden="true">
+  <p class="shortcuts__label">快捷键</p>
+  <ul class="shortcuts__list">
+    <li><kbd>Shift</kbd><span>+</span><kbd>T</kbd><span class="shortcuts__text">切换主题</span></li>
+    <li><kbd>Shift</kbd><span>+</span><kbd>H</kbd><span class="shortcuts__text">回到首页</span></li>
+    <li><kbd>Shift</kbd><span>+</span><kbd>R</kbd><span class="shortcuts__text">随机文章</span></li>
+  </ul>
+</div>
+
+  
+
+  
+    <script type="application/json" id="post-index">["/2019/09/linux-screen/","/2019/09/linux-dst-server/","/2019/09/ubuntu-sudo-no-password/","/2019/09/gitee-hexo/","/2019/11/windows-dst-server/","/2019/11/diy-dst-cmd/","/dst/","/2019/11/dst-nickname/","/2020/02/dst-wx78/","/2020/03/aria2-h5ai/","/2020/05/github-action-hexo/","/2020/08/python-mail/","/2020/08/openvpn","/2020/09/sublime-text-date-time/","/2023/08/sklearn-paramenter-tune/","/2020/08/frp/","/2020/07/r-mice/","/2023/08/sklearn-regression-algorithm/","/2026/08/compress-pdf-with-python/","/2024/09/mongorestore/","/2026/08/github-pull-request/"]</script>
+  
+
+  <script src="/js/main.js" defer></script>
+</body>
+</html>

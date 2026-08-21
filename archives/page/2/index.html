@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+
+  
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#fcfcfb" media="(prefers-color-scheme: light)" id="tc-light">
+  <meta name="theme-color" content="#171715" media="(prefers-color-scheme: dark)" id="tc-dark">
+
+  <script>
+    (function () {
+      var root = document.documentElement;
+      var key  = 'idyll-theme';
+
+      root.classList.add('js');
+
+      var saved = null;
+      try { saved = localStorage.getItem(key); } catch (err) {}
+
+      var tcLight = document.getElementById('tc-light');
+      var tcDark  = document.getElementById('tc-dark');
+      var colors  = { light: '#fcfcfb', dark: '#171715' };
+
+      function syncChrome(mode) {
+        if (tcLight && tcDark) {
+          var c = colors[mode] || null;
+          tcLight.content = c || '#fcfcfb';
+          tcDark.content  = c || '#171715';
+        }
+      }
+
+      if (saved === 'light' || saved === 'dark') {
+        root.setAttribute('data-theme', saved);
+        syncChrome(saved);
+      }
+
+      function wire() {
+        var btn = document.getElementById('theme');
+        if (!btn) return;
+
+        var state = document.getElementById('theme-state');
+
+        function paint(mode) {
+          if (mode) root.setAttribute('data-theme', mode);
+          else root.removeAttribute('data-theme');
+
+          if (state) state.textContent = btn.getAttribute('data-' + (mode || 'auto'));
+
+          syncChrome(mode);
+
+          try {
+            if (mode) localStorage.setItem(key, mode);
+            else localStorage.removeItem(key);
+          } catch (err) {}
+
+          
+          document.dispatchEvent(new CustomEvent('idyll:theme', { detail: mode || 'auto' }));
+        }
+
+        btn.addEventListener('click', function () {
+          var cur     = root.getAttribute('data-theme') || '';
+          var sysDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+          if (cur === '') paint(sysDark ? 'light' : 'dark');
+          else if (cur === 'light') paint('dark');
+          else paint('');
+        });
+
+        paint(root.getAttribute('data-theme') || '');
+      }
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', wire);
+      } else {
+        wire();
+      }
+    })();
+  </script>
+
+  <title>归档 · 辣椒手记</title>
+  
+  <meta name="author" content="辣椒小皇纸">
+  
+
+  <meta property="og:type" content="website">
+<meta property="og:title" content="归档 · 辣椒手记">
+<meta property="og:url" content="https://peppernotes.top/archives/page/2/index.html">
+<meta property="og:site_name" content="辣椒手记">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:author" content="辣椒小皇纸">
+<meta name="twitter:card" content="summary">
+  
+  <link rel="canonical" href="https://peppernotes.top/archives/page/2/index.html">
+  <link rel="icon" href="/images/favicon.svg" type="image/svg+xml">
+  
+
+  <link rel="stylesheet" href="/css/style.css">
+  
+
+<meta name="generator" content="Hexo 8.1.2"></head>
+
+<body data-idyll="copy anchor ext toc shortcut"
+      data-copy="复制"
+      data-copied="已复制"
+      data-copyfail="请按 Ctrl+C"
+      data-anchor="链接到这一节">
+
+  
+
+  <a class="skip" href="#main">跳到正文</a>
+
+  <header class="nav" id="nav">
+  <div class="wrap nav__in">
+    <a class="nav__brand" href="/">
+      <span class="nav__mark" aria-hidden="true"></span>
+      <span class="nav__name">辣椒手记</span>
+    </a>
+
+    <div class="nav__right">
+      <nav class="nav__links" aria-label="站点导航">
+        
+          <a class="nav__link"
+             href="/">首页</a>
+        
+          <a class="nav__link is-on"
+             href="/archives/" aria-current=&#34;page&#34;>归档</a>
+        
+          <a class="nav__link"
+             href="/categories/">分类</a>
+        
+          <a class="nav__link"
+             href="/tags/">标签</a>
+        
+          <a class="nav__link"
+             href="/series/">系列</a>
+        
+          <a class="nav__link"
+             href="/about/">关于</a>
+        
+      </nav>
+
+      
+        
+        <button class="theme" id="theme" type="button"
+                data-auto="跟随系统"
+                data-light="亮色"
+                data-dark="暗色">
+          <svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true" focusable="false">
+            <g class="theme__ico theme__ico--auto">
+              <circle cx="8" cy="8" r="5.6" fill="none" stroke="currentColor" stroke-width="1.4"/>
+              <path d="M8 2.4a5.6 5.6 0 0 0 0 11.2z" fill="currentColor"/>
+            </g>
+            <g class="theme__ico theme__ico--light"
+               fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round">
+              <circle cx="8" cy="8" r="3.1"/>
+              <path d="M8 1.3v1.3M8 13.4v1.3M14.7 8h-1.3M2.6 8H1.3M12.74 3.26l-.92.92M4.18 11.82l-.92.92M12.74 12.74l-.92-.92M4.18 4.18l-.92-.92"/>
+            </g>
+            <g class="theme__ico theme__ico--dark">
+              <path d="M14 8.53A6 6 0 1 1 7.47 2 4.67 4.67 0 0 0 14 8.53z"
+                    fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
+            </g>
+          </svg>
+          
+          <span class="sr-only" id="theme-state" aria-live="polite">跟随系统</span>
+        </button>
+      
+    </div>
+  </div>
+</header>
+
+
+  <main class="main" id="main">
+
+<section class="wrap page-head">
+  
+  <h1 class="page-head__title">归档</h1>
+  <p class="page-head__meta">21 篇</p>
+</section>
+
+<section class="wrap">
+  
+
+
+
+  <div class="list">
+    
+      <div class="year">
+        <span class="year__n">2020</span>
+        <span class="year__rule"></span>
+      </div>
+    
+
+      <a class="item" href="/2020/05/github-action-hexo/">
+        <time class="item__date" datetime="2020-05-24T10:44:00.000Z">05-24</time>
+
+        <div class="item__body">
+          <h2 class="item__title">利用 GitHub Action 部署 Hexo 博客<span class="item__arrow" aria-hidden="true">→</span></h2>
+
+          
+          <p class="item__desc">自动部署博客到 GitHub 和码云，并实现码云的自动更新，不需要再登录网页点击按钮在使用本教程前，请确保本地部署 Hexo 博客到 GitHub 及码云已成功参考文献：利用 GitHub Actions 自动部署 He…</p>
+
+          
+            <div class="item__tags">
+              <span class="pill">Hexo</span><span class="pill">Gitee</span><span class="pill">GitHub Actions</span><span class="pill">CI/CD</span><span class="pill">自动部署</span><span class="pill">GitHub</span>
+            </div>
+          
+        </div>
+      </a>
+    
+
+      <a class="item" href="/2020/03/aria2-h5ai/">
+        <time class="item__date" datetime="2020-03-06T07:15:00.000Z">03-06</time>
+
+        <div class="item__body">
+          <h2 class="item__title">利用 Aria2 及 h5ai 在服务器上搭建影音中心<span class="item__arrow" aria-hidden="true">→</span></h2>
+
+          
+          <p class="item__desc">最近买了一台带宽5m的服务器，利用闲置的带宽来搭建个人影音中心基于腾讯云Ubuntu Server 16</p>
+
+          
+            <div class="item__tags">
+              <span class="pill">Linux</span><span class="pill">Aria2</span><span class="pill">AriaNg</span><span class="pill">h5ai</span><span class="pill">Apache</span><span class="pill">PHP</span><span class="pill">文件服务器</span>
+            </div>
+          
+        </div>
+      </a>
+    
+
+      <a class="item" href="/2020/02/dst-wx78/">
+        <time class="item__date" datetime="2020-02-28T10:49:00.000Z">02-28</time>
+
+        <div class="item__body">
+          <h2 class="item__title">饥荒联机版 WX-78 雷击超载时间计算公式<span class="item__arrow" aria-hidden="true">→</span></h2>
+
+          
+          <p class="item__desc">WX-78被雷击之后超载时间一直是个谜博主提取饥荒联机版内部Lua代码，写了一个计算超载时间的公式，点击下面按钮输入雷击天数即可</p>
+
+          
+            <div class="item__tags">
+              <span class="pill">饥荒联机版</span><span class="pill">Lua</span><span class="pill">WX-78</span><span class="pill">雷击</span><span class="pill">超载</span><span class="pill">公式计算</span>
+            </div>
+          
+        </div>
+      </a>
+    
+      <div class="year">
+        <span class="year__n">2019</span>
+        <span class="year__rule"></span>
+      </div>
+    
+
+      <a class="item" href="/2019/11/diy-dst-cmd/">
+        <time class="item__date" datetime="2019-11-17T16:13:00.000Z">11-18</time>
+
+        <div class="item__body">
+          <h2 class="item__title">自定义饥荒服务器后台命令<span class="item__arrow" aria-hidden="true">→</span></h2>
+
+          
+          <p class="item__desc">本教程适用Linux、Windows及Mac OS创建的专属服务器(Dedicated Server)，也适用于客户端</p>
+
+          
+            <div class="item__tags">
+              <span class="pill">饥荒联机版</span><span class="pill">专用服务器</span><span class="pill">Lua</span><span class="pill">服务器管理</span><span class="pill">控制台命令</span><span class="pill">资源清理</span>
+            </div>
+          
+        </div>
+      </a>
+    
+
+      <a class="item" href="/2019/11/dst-nickname/">
+        <time class="item__date" datetime="2019-11-14T14:03:00.000Z">11-14</time>
+
+        <div class="item__body">
+          <h2 class="item__title">让您的饥荒昵称看起来更精致<span class="item__arrow" aria-hidden="true">→</span></h2>
+
+          
+          <p class="item__desc">自从新版Gorge更新以来，就引入了48种可爱的表情符号您只需要想像一下包含一些符号的新名称我建议最多使用2-3个符号，最多6个字母如果您的名字太长，则这些符号将不会正确显示它在Steam或Steam论坛中显示为󰀑Ex…</p>
+
+          
+            <div class="item__tags">
+              <span class="pill">饥荒联机版</span><span class="pill">Steam</span><span class="pill">昵称</span><span class="pill">表情符号</span>
+            </div>
+          
+        </div>
+      </a>
+    
+
+      <a class="item" href="/2019/11/windows-dst-server/">
+        <time class="item__date" datetime="2019-11-01T10:47:00.000Z">11-01</time>
+
+        <div class="item__body">
+          <h2 class="item__title">Windows 搭建饥荒服务器指南<span class="item__arrow" aria-hidden="true">→</span></h2>
+
+          
+          <p class="item__desc">因为有些人不习惯Linux系统，这里我专门写一章Windows版的搭建教程 本指南的目的是在Windows上创建带洞穴的饥荒服务器，非多层世界本指南基于Windows Server 2016制作，理论上其他Windows…</p>
+
+          
+            <div class="item__tags">
+              <span class="pill">饥荒联机版</span><span class="pill">SteamCMD</span><span class="pill">专用服务器</span><span class="pill">洞穴世界</span><span class="pill">模组</span><span class="pill">Windows</span>
+            </div>
+          
+        </div>
+      </a>
+    
+
+      <a class="item" href="/2019/09/ubuntu-sudo-no-password/">
+        <time class="item__date" datetime="2019-09-22T09:33:00.000Z">09-22</time>
+
+        <div class="item__body">
+          <h2 class="item__title">Ubuntu 在运行 sudo 命令时免密码<span class="item__arrow" aria-hidden="true">→</span></h2>
+
+          
+          <p class="item__desc">本教程基于Ubuntu 18.04 64位，理论上使用于所有Ubuntu系统</p>
+
+          
+            <div class="item__tags">
+              <span class="pill">Linux</span><span class="pill">Ubuntu</span><span class="pill">sudo</span><span class="pill">权限管理</span><span class="pill">系统管理</span>
+            </div>
+          
+        </div>
+      </a>
+    
+
+      <a class="item" href="/2019/09/gitee-hexo/">
+        <time class="item__date" datetime="2019-09-21T18:12:00.000Z">09-22</time>
+
+        <div class="item__body">
+          <h2 class="item__title">在码云上利用 Hexo 搭建博客<span class="item__arrow" aria-hidden="true">→</span></h2>
+
+          
+          <p class="item__desc">本教程基于腾讯云的Ubuntu 18.04 64位</p>
+
+          
+            <div class="item__tags">
+              <span class="pill">Hexo</span><span class="pill">Node.js</span><span class="pill">Git</span><span class="pill">Gitee</span><span class="pill">静态博客</span><span class="pill">博客搭建</span>
+            </div>
+          
+        </div>
+      </a>
+    
+
+      <a class="item" href="/2019/09/linux-screen/">
+        <time class="item__date" datetime="2019-09-20T11:16:00.000Z">09-20</time>
+
+        <div class="item__body">
+          <h2 class="item__title">Linux Screen 命令详解<span class="item__arrow" aria-hidden="true">→</span></h2>
+
+          
+          <p class="item__desc">Linux系统管理员经常需要SSH远程登录到Linux服务器，经常运行一些需要很长时间才能完成的任务，比如系统备份、传输文件等等。通常情况下我们都是为每一个这样的任务开一个远程终端窗口，因为它们执行的时间太长了，必须等待…</p>
+
+          
+            <div class="item__tags">
+              <span class="pill">Linux</span><span class="pill">Screen</span><span class="pill">SSH</span><span class="pill">终端</span><span class="pill">服务器运维</span>
+            </div>
+          
+        </div>
+      </a>
+    
+
+      <a class="item" href="/2019/09/linux-dst-server/">
+        <time class="item__date" datetime="2019-09-19T15:16:00.000Z">09-19</time>
+
+        <div class="item__body">
+          <h2 class="item__title">Linux 搭建饥荒服务器指南<span class="item__arrow" aria-hidden="true">→</span></h2>
+
+          
+          <p class="item__desc">问：为什么要用Linux Server而不是Windows创建饥荒服务器呢？答：Linux Server没有图形界面，同样配置下比Windows更节省系统资源。这样就能把更多资源留给饥荒服务器。另外Linux可以用ssh…</p>
+
+          
+            <div class="item__tags">
+              <span class="pill">Linux</span><span class="pill">饥荒联机版</span><span class="pill">SteamCMD</span><span class="pill">专用服务器</span><span class="pill">洞穴世界</span><span class="pill">模组</span><span class="pill">Shell</span>
+            </div>
+          
+        </div>
+      </a>
+    
+  </div>
+
+
+  
+<nav class="pager" aria-label="Pagination">
+  
+    <a class="pager__btn" href="/archives/" rel="prev"><span aria-hidden="true">←</span> 更新</a>
+  
+
+  <span class="pager__count">2 / 3</span>
+
+  
+    <a class="pager__btn" href="/archives/page/3/" rel="next">更早 <span aria-hidden="true">→</span></a>
+  
+</nav>
+
+
+</section>
+</main>
+
+  
+<footer class="foot">
+  <div class="wrap foot__in">
+    <div class="foot__left">
+      
+      <p class="foot__copy">© 2026 辣椒小皇纸</p>
+    </div>
+
+    <div class="foot__right">
+      
+        <a class="foot__link" href="https://github.com/suhuang64" target="_blank" rel="noopener noreferrer">GitHub</a>
+      
+      
+    </div>
+  </div>
+</footer>
+
+
+  
+    <button class="totop" id="totop" type="button" aria-label="回到顶部">
+      <svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true" focusable="false">
+        <path d="M8 3.6l5.2 5.2-1.1 1.1L8.8 6.8V13h-1.6V6.8L3.9 9.9 2.8 8.8z" fill="currentColor"/>
+      </svg>
+    </button>
+  
+
+  
+    
+<div class="shortcuts" id="shortcuts" aria-hidden="true">
+  <p class="shortcuts__label">快捷键</p>
+  <ul class="shortcuts__list">
+    <li><kbd>Shift</kbd><span>+</span><kbd>T</kbd><span class="shortcuts__text">切换主题</span></li>
+    <li><kbd>Shift</kbd><span>+</span><kbd>H</kbd><span class="shortcuts__text">回到首页</span></li>
+    <li><kbd>Shift</kbd><span>+</span><kbd>R</kbd><span class="shortcuts__text">随机文章</span></li>
+  </ul>
+</div>
+
+  
+
+  
+    <script type="application/json" id="post-index">["/2019/09/linux-screen/","/2019/09/linux-dst-server/","/2019/09/ubuntu-sudo-no-password/","/2019/09/gitee-hexo/","/2019/11/windows-dst-server/","/2019/11/diy-dst-cmd/","/dst/","/2019/11/dst-nickname/","/2020/02/dst-wx78/","/2020/03/aria2-h5ai/","/2020/05/github-action-hexo/","/2020/08/python-mail/","/2020/08/openvpn","/2020/09/sublime-text-date-time/","/2023/08/sklearn-paramenter-tune/","/2020/08/frp/","/2020/07/r-mice/","/2023/08/sklearn-regression-algorithm/","/2026/08/compress-pdf-with-python/","/2024/09/mongorestore/","/2026/08/github-pull-request/"]</script>
+  
+
+  <script src="/js/main.js" defer></script>
+</body>
+</html>

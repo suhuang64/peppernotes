@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+
+  
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#fcfcfb" media="(prefers-color-scheme: light)" id="tc-light">
+  <meta name="theme-color" content="#171715" media="(prefers-color-scheme: dark)" id="tc-dark">
+
+  <script>
+    (function () {
+      var root = document.documentElement;
+      var key  = 'idyll-theme';
+
+      root.classList.add('js');
+
+      var saved = null;
+      try { saved = localStorage.getItem(key); } catch (err) {}
+
+      var tcLight = document.getElementById('tc-light');
+      var tcDark  = document.getElementById('tc-dark');
+      var colors  = { light: '#fcfcfb', dark: '#171715' };
+
+      function syncChrome(mode) {
+        if (tcLight && tcDark) {
+          var c = colors[mode] || null;
+          tcLight.content = c || '#fcfcfb';
+          tcDark.content  = c || '#171715';
+        }
+      }
+
+      if (saved === 'light' || saved === 'dark') {
+        root.setAttribute('data-theme', saved);
+        syncChrome(saved);
+      }
+
+      function wire() {
+        var btn = document.getElementById('theme');
+        if (!btn) return;
+
+        var state = document.getElementById('theme-state');
+
+        function paint(mode) {
+          if (mode) root.setAttribute('data-theme', mode);
+          else root.removeAttribute('data-theme');
+
+          if (state) state.textContent = btn.getAttribute('data-' + (mode || 'auto'));
+
+          syncChrome(mode);
+
+          try {
+            if (mode) localStorage.setItem(key, mode);
+            else localStorage.removeItem(key);
+          } catch (err) {}
+
+          
+          document.dispatchEvent(new CustomEvent('idyll:theme', { detail: mode || 'auto' }));
+        }
+
+        btn.addEventListener('click', function () {
+          var cur     = root.getAttribute('data-theme') || '';
+          var sysDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+          if (cur === '') paint(sysDark ? 'light' : 'dark');
+          else if (cur === 'light') paint('dark');
+          else paint('');
+        });
+
+        paint(root.getAttribute('data-theme') || '');
+      }
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', wire);
+      } else {
+        wire();
+      }
+    })();
+  </script>
+
+  <title>利用 Aria2 及 h5ai 在服务器上搭建影音中心 · 辣椒手记</title>
+  <meta name="description" content="最近买了一台带宽5m的服务器，利用闲置的带宽来搭建个人影音中心基于腾讯云Ubuntu Server 16">
+  <meta name="author" content="辣椒小皇纸">
+  
+
+  <meta name="description" content="最近买了一台带宽5m的服务器，利用闲置的带宽来搭建个人影音中心基于腾讯云Ubuntu Server 16">
+<meta property="og:type" content="article">
+<meta property="og:title" content="利用 Aria2 及 h5ai 在服务器上搭建影音中心 · 辣椒手记">
+<meta property="og:url" content="https://peppernotes.top/2020/03/aria2-h5ai/index.html">
+<meta property="og:site_name" content="辣椒手记">
+<meta property="og:description" content="最近买了一台带宽5m的服务器，利用闲置的带宽来搭建个人影音中心基于腾讯云Ubuntu Server 16">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2020-03-06T07:15:00.000Z">
+<meta property="article:modified_time" content="2020-05-24T10:46:00.000Z">
+<meta property="article:author" content="辣椒小皇纸">
+<meta property="article:tag" content="Apache">
+<meta property="article:tag" content="Aria2">
+<meta property="article:tag" content="AriaNg">
+<meta property="article:tag" content="Linux">
+<meta property="article:tag" content="PHP">
+<meta property="article:tag" content="h5ai">
+<meta property="article:tag" content="文件服务器">
+<meta name="twitter:card" content="summary">
+  
+  <link rel="canonical" href="https://peppernotes.top/2020/03/aria2-h5ai/">
+  <link rel="icon" href="/images/favicon.svg" type="image/svg+xml">
+  
+
+  <link rel="stylesheet" href="/css/style.css">
+  
+
+<meta name="generator" content="Hexo 8.1.2"></head>
+
+<body data-idyll="copy anchor ext toc shortcut"
+      data-copy="复制"
+      data-copied="已复制"
+      data-copyfail="请按 Ctrl+C"
+      data-anchor="链接到这一节">
+
+  
+    <div class="progress" id="progress" aria-hidden="true"><i></i></div>
+  
+
+  <a class="skip" href="#main">跳到正文</a>
+
+  <header class="nav" id="nav">
+  <div class="wrap nav__in">
+    <a class="nav__brand" href="/">
+      <span class="nav__mark" aria-hidden="true"></span>
+      <span class="nav__name">辣椒手记</span>
+    </a>
+
+    <div class="nav__right">
+      <nav class="nav__links" aria-label="站点导航">
+        
+          <a class="nav__link"
+             href="/">首页</a>
+        
+          <a class="nav__link"
+             href="/archives/">归档</a>
+        
+          <a class="nav__link"
+             href="/categories/">分类</a>
+        
+          <a class="nav__link"
+             href="/tags/">标签</a>
+        
+          <a class="nav__link"
+             href="/series/">系列</a>
+        
+          <a class="nav__link"
+             href="/about/">关于</a>
+        
+      </nav>
+
+      
+        
+        <button class="theme" id="theme" type="button"
+                data-auto="跟随系统"
+                data-light="亮色"
+                data-dark="暗色">
+          <svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true" focusable="false">
+            <g class="theme__ico theme__ico--auto">
+              <circle cx="8" cy="8" r="5.6" fill="none" stroke="currentColor" stroke-width="1.4"/>
+              <path d="M8 2.4a5.6 5.6 0 0 0 0 11.2z" fill="currentColor"/>
+            </g>
+            <g class="theme__ico theme__ico--light"
+               fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round">
+              <circle cx="8" cy="8" r="3.1"/>
+              <path d="M8 1.3v1.3M8 13.4v1.3M14.7 8h-1.3M2.6 8H1.3M12.74 3.26l-.92.92M4.18 11.82l-.92.92M12.74 12.74l-.92-.92M4.18 4.18l-.92-.92"/>
+            </g>
+            <g class="theme__ico theme__ico--dark">
+              <path d="M14 8.53A6 6 0 1 1 7.47 2 4.67 4.67 0 0 0 14 8.53z"
+                    fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
+            </g>
+          </svg>
+          
+          <span class="sr-only" id="theme-state" aria-live="polite">跟随系统</span>
+        </button>
+      
+    </div>
+  </div>
+</header>
+
+
+  <main class="main" id="main">
+
+<article class="post">
+  <header class="wrap post__head">
+    
+      <p class="post__kicker">
+        <a href="/categories/%E6%8A%80%E6%9C%AF/">技术</a><span class="sep">/</span><a href="/categories/%E6%8A%80%E6%9C%AF/Linux/">Linux</a>
+      </p>
+    
+
+    <h1 class="post__title">利用 Aria2 及 h5ai 在服务器上搭建影音中心</h1>
+
+    <div class="post__meta">
+      
+      <time datetime="2020-03-06T07:15:00.000Z"><span class="sr-only">发布于 </span>2020-03-06</time>
+      
+        <span class="dot" aria-hidden="true">·</span>
+        <span>1,322 字</span>
+      
+      
+        <span class="dot" aria-hidden="true">·</span>
+        <span>4 分钟</span>
+      
+      
+        <span class="dot" aria-hidden="true">·</span>
+        <span>更新于 2020-05-24</span>
+      
+    </div>
+  </header>
+
+  
+<nav class="toc" aria-label="目录">
+  <p class="toc__label">目录</p>
+  <ol class="toc__list">
+    
+      <li>
+        <a class="toc__link" href="#前言" data-toc-id="前言" title="前言">前言</a>
+        
+      </li>
+    
+      <li>
+        <a class="toc__link" href="#准备工作" data-toc-id="准备工作" title="准备工作">准备工作</a>
+        
+      </li>
+    
+      <li>
+        <a class="toc__link" href="#安装aria2" data-toc-id="安装aria2" title="安装aria2">安装aria2</a>
+        
+      </li>
+    
+      <li>
+        <a class="toc__link" href="#配置aria2" data-toc-id="配置aria2" title="配置aria2">配置aria2</a>
+        
+          <ol class="toc__list toc__list--sub">
+            
+              <li><a class="toc__link toc__link--sub" href="#修改配置文件" data-toc-id="修改配置文件" title="修改配置文件">修改配置文件</a></li>
+            
+              <li><a class="toc__link toc__link--sub" href="#运行aria2" data-toc-id="运行aria2" title="运行aria2">运行aria2</a></li>
+            
+              <li><a class="toc__link toc__link--sub" href="#设置aria2开机自动启动" data-toc-id="设置aria2开机自动启动" title="设置aria2开机自动启动">设置aria2开机自动启动</a></li>
+            
+          </ol>
+        
+      </li>
+    
+      <li>
+        <a class="toc__link" href="#安装AriaNg" data-toc-id="安装AriaNg" title="安装AriaNg">安装AriaNg</a>
+        
+          <ol class="toc__list toc__list--sub">
+            
+              <li><a class="toc__link toc__link--sub" href="#先要安装http服务" data-toc-id="先要安装http服务" title="先要安装http服务">先要安装http服务</a></li>
+            
+              <li><a class="toc__link toc__link--sub" href="#修改apache2默认文件夹" data-toc-id="修改apache2默认文件夹" title="修改apache2默认文件夹">修改apache2默认文件夹</a></li>
+            
+              <li><a class="toc__link toc__link--sub" href="#下载AriaNg" data-toc-id="下载AriaNg" title="下载AriaNg">下载AriaNg</a></li>
+            
+          </ol>
+        
+      </li>
+    
+      <li>
+        <a class="toc__link" href="#搭建h5ai" data-toc-id="搭建h5ai" title="搭建h5ai">搭建h5ai</a>
+        
+          <ol class="toc__list toc__list--sub">
+            
+              <li><a class="toc__link toc__link--sub" href="#安装php服务" data-toc-id="安装php服务" title="安装php服务">安装php服务</a></li>
+            
+              <li><a class="toc__link toc__link--sub" href="#下载h5ai" data-toc-id="下载h5ai" title="下载h5ai">下载h5ai</a></li>
+            
+              <li><a class="toc__link toc__link--sub" href="#修改-apache-配置文件" data-toc-id="修改-apache-配置文件" title="修改 apache 配置文件">修改 apache 配置文件</a></li>
+            
+              <li><a class="toc__link toc__link--sub" href="#添加用户名和密码" data-toc-id="添加用户名和密码" title="添加用户名和密码">添加用户名和密码</a></li>
+            
+              <li><a class="toc__link toc__link--sub" href="#修改相关权限" data-toc-id="修改相关权限" title="修改相关权限">修改相关权限</a></li>
+            
+              <li><a class="toc__link toc__link--sub" href="#重启apache服务器" data-toc-id="重启apache服务器" title="重启apache服务器">重启apache服务器</a></li>
+            
+          </ol>
+        
+      </li>
+    
+      <li>
+        <a class="toc__link" href="#网页使用h5ai及AriaNg教程" data-toc-id="网页使用h5ai及AriaNg教程" title="网页使用h5ai及AriaNg教程">网页使用h5ai及AriaNg教程</a>
+        
+      </li>
+    
+      <li>
+        <a class="toc__link" href="#h5ai" data-toc-id="h5ai" title="h5ai">h5ai</a>
+        
+      </li>
+    
+      <li>
+        <a class="toc__link" href="#AriaNg" data-toc-id="AriaNg" title="AriaNg">AriaNg</a>
+        
+      </li>
+    
+  </ol>
+</nav>
+
+
+  <div class="wrap prose" id="content"><blockquote>
+<p>最近买了一台带宽5m的服务器，利用闲置的带宽来搭建个人影音中心<br>基于腾讯云Ubuntu Server 16</p>
+</blockquote>
+<span id="more"></span>
+
+<h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>H5ai是一款功能强大 php 文件目录列表程序，由德国开发者 Lars Jung 主导开发，它提供多种文件目录列表呈现方式，支持多种主流 Web 服务器，例如 Nginx、Apache、Cherokee、Lighttpd 等，支持多国语言，可以使用本程序在线预览文本、图片、音频、视频等。<a target="_blank" rel="noopener" href="https://www.xzymoe.com/h5ai/">1</a></p>
+<h2 id="准备工作"><a href="#准备工作" class="headerlink" title="准备工作"></a>准备工作</h2><p>更新软件源及软件包</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">sudo</span> apt update</span><br><span class="line"><span class="built_in">sudo</span> apt upgrade</span><br><span class="line"><span class="built_in">sudo</span> apt dist-upgrade</span><br></pre></td></tr></table></figure>
+
+<h2 id="安装aria2"><a href="#安装aria2" class="headerlink" title="安装aria2"></a>安装aria2</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">sudo</span> apt install -y aria2</span><br></pre></td></tr></table></figure>
+
+<h2 id="配置aria2"><a href="#配置aria2" class="headerlink" title="配置aria2"></a>配置aria2</h2><h3 id="修改配置文件"><a href="#修改配置文件" class="headerlink" title="修改配置文件"></a>修改配置文件</h3><p>创建aria2的配置文件夹及文件</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">mkdir</span> /home/ubuntu/.aria2</span><br><span class="line">vi /home/ubuntu/.aria2/aria2.conf</span><br></pre></td></tr></table></figure>
+
+<p>在新文件中写入以下内容并保存（第2行的<code>rpc-secret</code>你想设置的密钥）</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br></pre></td><td class="code"><pre><span class="line">#设置加密的密钥</span><br><span class="line">rpc-secret= 123456789</span><br><span class="line">#允许rpc</span><br><span class="line">enable-rpc=true</span><br><span class="line">#允许所有来源, web界面跨域权限需要</span><br><span class="line">rpc-allow-origin-all=true</span><br><span class="line">#是否启用https加密，启用之后要设置公钥,私钥的文件路径</span><br><span class="line">#rpc-secure=true</span><br><span class="line">#启用加密设置公钥</span><br><span class="line">#rpc-certificate=/home/name/.config/aria2/example.crt</span><br><span class="line">#启用加密设置私钥</span><br><span class="line">#rpc-private-key=/home/name/.config/aria2/example.key</span><br><span class="line">#允许外部访问，false的话只监听本地端口</span><br><span class="line">rpc-listen-all=true</span><br><span class="line">#RPC端口, 仅当默认端口被占用时修改</span><br><span class="line">#rpc-listen-port=6800</span><br><span class="line">#最大同时下载数(任务数), 路由建议值: 3</span><br><span class="line">max-concurrent-downloads=5</span><br><span class="line">#断点续传</span><br><span class="line">continue=true</span><br><span class="line">#同服务器连接数</span><br><span class="line">max-connection-per-server=5</span><br><span class="line">#最小文件分片大小, 下载线程数上限取决于能分出多少片, 对于小文件重要</span><br><span class="line">min-split-size=10M</span><br><span class="line">#单文件最大线程数, 路由建议值: 5</span><br><span class="line">split=10</span><br><span class="line">#下载速度限制</span><br><span class="line">max-overall-download-limit=0</span><br><span class="line">#单文件速度限制</span><br><span class="line">max-download-limit=0</span><br><span class="line">#上传速度限制</span><br><span class="line">max-overall-upload-limit=0</span><br><span class="line">#单文件速度限制</span><br><span class="line">max-upload-limit=0</span><br><span class="line">#断开速度过慢的连接</span><br><span class="line">#lowest-speed-limit=0</span><br><span class="line">#验证用，需要1.16.1之后的release版本</span><br><span class="line">#referer=*</span><br><span class="line">#文件保存路径, 默认为当前启动位置</span><br><span class="line">dir=/home/ubuntu/webroot/download</span><br><span class="line">#文件缓存, 使用内置的文件缓存, 如果你不相信Linux内核文件缓存和磁盘内置缓存时使用, 需要1.16及以上版本</span><br><span class="line">#disk-cache=0</span><br><span class="line">#另一种Linux文件缓存方式, 使用前确保您使用的内核支持此选项, 需要1.15及以上版本(?)</span><br><span class="line">#enable-mmap=true</span><br><span class="line">#文件预分配, 能有效降低文件碎片, 提高磁盘性能. 缺点是预分配时间较长</span><br><span class="line">#所需时间 none &lt; falloc ? trunc &lt;&lt; prealloc, falloc和trunc需要文件系统和内核支持</span><br><span class="line">file-allocation=prealloc</span><br><span class="line">#不进行证书校验</span><br><span class="line">check-certificate=false</span><br></pre></td></tr></table></figure>
+
+<h3 id="运行aria2"><a href="#运行aria2" class="headerlink" title="运行aria2"></a>运行aria2</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">aria2c --conf-path=/home/ubuntu/.aria2/aria2.conf -D</span><br></pre></td></tr></table></figure>
+
+<h3 id="设置aria2开机自动启动"><a href="#设置aria2开机自动启动" class="headerlink" title="设置aria2开机自动启动"></a>设置aria2开机自动启动</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">sudo</span> vi /etc/rc.local</span><br></pre></td></tr></table></figure>
+
+<p>在最下面加入：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">aria2c --conf-path=/home/ubuntu/.aria2/aria2.conf -D &amp;</span><br></pre></td></tr></table></figure>
+
+<h2 id="安装AriaNg"><a href="#安装AriaNg" class="headerlink" title="安装AriaNg"></a>安装AriaNg</h2><h3 id="先要安装http服务"><a href="#先要安装http服务" class="headerlink" title="先要安装http服务"></a>先要安装http服务</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">sudo</span> apt install -y apache2</span><br></pre></td></tr></table></figure>
+
+<h3 id="修改apache2默认文件夹"><a href="#修改apache2默认文件夹" class="headerlink" title="修改apache2默认文件夹"></a>修改apache2默认文件夹</h3><p>apache2的默认文件夹在<code>/var/www/html</code>，平时使用不方便，因而改为<code>/home/ubuntu/webroot</code>，方法如下：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">mkdir</span> ~/webroot</span><br><span class="line"><span class="built_in">sudo</span> vi /etc/apache2/apache2.conf</span><br></pre></td></tr></table></figure>
+<p>找到</p>
+<figure class="highlight html"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">Directory</span> /<span class="attr">var</span>/<span class="attr">www</span>/&gt;</span></span><br><span class="line">        Options Indexes FollowSymLinks</span><br><span class="line">        AllowOverride None</span><br><span class="line">        Require all granted</span><br><span class="line"><span class="tag">&lt;/<span class="name">Directory</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+<p>在其下方添加以下内容并保存退出</p>
+<figure class="highlight html"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">Directory</span> /<span class="attr">home</span>/<span class="attr">ubuntu</span>/<span class="attr">webroot</span>&gt;</span></span><br><span class="line">        Options Indexes FollowSymLinks MultiViews</span><br><span class="line">        AllowOverride All</span><br><span class="line">        Require all granted</span><br><span class="line"><span class="tag">&lt;/<span class="name">Directory</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+<p>然后修改<code>000-default.conf</code>：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">sudo</span> vi /etc/apache2/sites-available/000-default.conf</span><br></pre></td></tr></table></figure>
+
+<p>找到<code>DocumentRoot /var/www/html</code>，改为<code>DocumentRoot /home/ubuntu/webroot</code>即可</p>
+<h3 id="下载AriaNg"><a href="#下载AriaNg" class="headerlink" title="下载AriaNg"></a>下载AriaNg</h3><p>AriaNg 是一个让 aria2 更容易使用的现代 Web 前端</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">cd</span> ~/webroot</span><br><span class="line"><span class="built_in">mkdir</span> AriaNg</span><br><span class="line"><span class="built_in">cd</span> AriaNg</span><br><span class="line">wget https://github.com/mayswind/AriaNg/releases/download/1.1.4/AriaNg-1.1.4.zip</span><br><span class="line">unzip AriaNg-1.1.4.zip</span><br><span class="line"><span class="built_in">rm</span> AriaNg-1.1.4.zip</span><br></pre></td></tr></table></figure>
+
+<h2 id="搭建h5ai"><a href="#搭建h5ai" class="headerlink" title="搭建h5ai"></a>搭建h5ai</h2><h3 id="安装php服务"><a href="#安装php服务" class="headerlink" title="安装php服务"></a>安装php服务</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">sudo</span> apt install -y php libapache2-mod-php</span><br><span class="line"><span class="built_in">sudo</span> /etc/init.d/apache2 restart</span><br></pre></td></tr></table></figure>
+
+<h3 id="下载h5ai"><a href="#下载h5ai" class="headerlink" title="下载h5ai"></a>下载h5ai</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">cd</span> ~/webroot</span><br><span class="line">wget https://release.larsjung.de/h5ai/h5ai-0.29.2.zip</span><br><span class="line">unzip h5ai-0.29.2.zip</span><br><span class="line"><span class="built_in">rm</span> h5ai-0.29.2.zip</span><br></pre></td></tr></table></figure>
+
+<h3 id="修改-apache-配置文件"><a href="#修改-apache-配置文件" class="headerlink" title="修改 apache 配置文件"></a>修改 apache 配置文件</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">sudo</span> vi /etc/apache2/mods-available/dir.conf</span><br></pre></td></tr></table></figure>
+
+<p>将<code>DirectoryIndex index.html index.cgi index.pl index.php index.xhtml index.htm</code>改成：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">DirectoryIndex index index.html index.php /_h5ai/public/index.php</span><br></pre></td></tr></table></figure>
+
+<h3 id="添加用户名和密码"><a href="#添加用户名和密码" class="headerlink" title="添加用户名和密码"></a>添加用户名和密码</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">vi /home/ubuntu/webroot/_h5ai/public/index.php</span><br></pre></td></tr></table></figure>
+
+<p>在第二行，也就是<code>&lt;?php</code>下面添加一行，内容为：</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="title function_ invoke__">passwd</span>();</span><br></pre></td></tr></table></figure>
+
+<p>在最下面另起一行添加以下内容：</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">passwd</span>(<span class="params"></span>)</span>&#123;</span><br><span class="line">    <span class="variable">$user</span>=<span class="keyword">array</span>(<span class="string">&#x27;用户名&#x27;</span>,<span class="string">&#x27;密码&#x27;</span>);</span><br><span class="line">    <span class="keyword">if</span>(!(<span class="variable">$user</span>[<span class="number">0</span>]===<span class="variable">$_SERVER</span>[<span class="string">&#x27;PHP_AUTH_USER&#x27;</span>] &amp;&amp; <span class="variable">$user</span>[<span class="number">1</span>]===<span class="variable">$_SERVER</span>[<span class="string">&#x27;PHP_AUTH_PW&#x27;</span>]))&#123;</span><br><span class="line">        <span class="title function_ invoke__">header</span>(<span class="string">&#x27;WWW-Authenticate: Basic realm=&quot;138vps&quot;&#x27;</span>);</span><br><span class="line">        <span class="title function_ invoke__">header</span>(<span class="string">&#x27;HTTP/1.0 401 Unauthorized&#x27;</span>);</span><br><span class="line">        <span class="keyword">die</span>(<span class="string">&quot;please login&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>其中用户名和密码改为你自己的，此为登陆h5ai之用</p>
+<h3 id="修改相关权限"><a href="#修改相关权限" class="headerlink" title="修改相关权限"></a>修改相关权限</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">sudo</span> <span class="built_in">chmod</span> 777 -R /home/ubuntu/webroot</span><br></pre></td></tr></table></figure>
+
+<h3 id="重启apache服务器"><a href="#重启apache服务器" class="headerlink" title="重启apache服务器"></a>重启apache服务器</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">sudo</span> /etc/init.d/apache2 restart</span><br></pre></td></tr></table></figure>
+
+<p>至此，服务上的配置完毕</p>
+<h2 id="网页使用h5ai及AriaNg教程"><a href="#网页使用h5ai及AriaNg教程" class="headerlink" title="网页使用h5ai及AriaNg教程"></a>网页使用h5ai及AriaNg教程</h2><h2 id="h5ai"><a href="#h5ai" class="headerlink" title="h5ai"></a>h5ai</h2><p>在浏览器中直接输入你服务器的 ip，在以下弹窗中输入<a href="#添加用户名和密码">上面</a>设置的用户名及密码即可进入 h5ai 界面</p>
+<p><code>download</code> 文件夹为下载的电影</p>
+<h2 id="AriaNg"><a href="#AriaNg" class="headerlink" title="AriaNg"></a>AriaNg</h2><p>点击页面上的 <code>AriaNg</code> 即可跳转进入 AriaNg 页面</p>
+<p>点击AriaNg页面左边的 <code>AriaNg设置</code>，切换到 <code>RPC</code> 选项卡，找到下面的 <code>Aria2 RPC密钥</code>，填入<a href="#修改配置文件">修改配置文件</a>设置的密钥，然后点击页面右上角的 <code>重新加载AriaNg</code> 即可</p>
+<p>连接成功后，尽情下载影片，然后打开h5ai的download文件夹在线看电影吧</p>
+</div>
+
+  <footer class="wrap post__foot">
+    
+      <div class="post__tags">
+        <a class="pill pill--link" href="/tags/Linux/">Linux</a><a class="pill pill--link" href="/tags/Aria2/">Aria2</a><a class="pill pill--link" href="/tags/AriaNg/">AriaNg</a><a class="pill pill--link" href="/tags/h5ai/">h5ai</a><a class="pill pill--link" href="/tags/Apache/">Apache</a><a class="pill pill--link" href="/tags/PHP/">PHP</a><a class="pill pill--link" href="/tags/%E6%96%87%E4%BB%B6%E6%9C%8D%E5%8A%A1%E5%99%A8/">文件服务器</a>
+      </div>
+    
+
+    
+
+    
+<section class="related" aria-label="相关文章">
+  <p class="related__label">相关文章</p>
+  <ul class="related__list">
+    
+      <li>
+        <a class="related__link" href="/2019/09/ubuntu-sudo-no-password/">
+          <span class="related__title">Ubuntu 在运行 sudo 命令时免密码<span class="item__arrow" aria-hidden="true">→</span></span>
+          <time class="related__date" datetime="2019-09-22T09:33:00.000Z">2019-09-22</time>
+        </a>
+      </li>
+    
+      <li>
+        <a class="related__link" href="/2019/09/linux-screen/">
+          <span class="related__title">Linux Screen 命令详解<span class="item__arrow" aria-hidden="true">→</span></span>
+          <time class="related__date" datetime="2019-09-20T11:16:00.000Z">2019-09-20</time>
+        </a>
+      </li>
+    
+      <li>
+        <a class="related__link" href="/2020/08/openvpn">
+          <span class="related__title">利用 OpenVPN 加速饥荒服务器<span class="item__arrow" aria-hidden="true">→</span></span>
+          <time class="related__date" datetime="2020-08-17T10:52:58.000Z">2020-08-17</time>
+        </a>
+      </li>
+    
+  </ul>
+</section>
+
+
+    
+      <nav class="nextprev" aria-label="归档">
+        
+          <a class="nextprev__card" href="/2020/05/github-action-hexo/" rel="prev">
+            <span class="nextprev__label"><span aria-hidden="true">←</span> 上一篇</span>
+            <span class="nextprev__title">利用 GitHub Action 部署 Hexo 博客</span>
+          </a>
+        
+
+        
+          <a class="nextprev__card nextprev__card--r" href="/2020/02/dst-wx78/" rel="next">
+            <span class="nextprev__label">下一篇 <span aria-hidden="true">→</span></span>
+            <span class="nextprev__title">饥荒联机版 WX-78 雷击超载时间计算公式</span>
+          </a>
+        
+      </nav>
+    
+  </footer>
+</article>
+
+
+
+
+
+</main>
+
+  
+<footer class="foot">
+  <div class="wrap foot__in">
+    <div class="foot__left">
+      
+      <p class="foot__copy">© 2026 辣椒小皇纸</p>
+    </div>
+
+    <div class="foot__right">
+      
+        <a class="foot__link" href="https://github.com/suhuang64" target="_blank" rel="noopener noreferrer">GitHub</a>
+      
+      
+    </div>
+  </div>
+</footer>
+
+
+  
+    <button class="totop" id="totop" type="button" aria-label="回到顶部">
+      <svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true" focusable="false">
+        <path d="M8 3.6l5.2 5.2-1.1 1.1L8.8 6.8V13h-1.6V6.8L3.9 9.9 2.8 8.8z" fill="currentColor"/>
+      </svg>
+    </button>
+  
+
+  
+    
+<div class="shortcuts" id="shortcuts" aria-hidden="true">
+  <p class="shortcuts__label">快捷键</p>
+  <ul class="shortcuts__list">
+    <li><kbd>Shift</kbd><span>+</span><kbd>T</kbd><span class="shortcuts__text">切换主题</span></li>
+    <li><kbd>Shift</kbd><span>+</span><kbd>H</kbd><span class="shortcuts__text">回到首页</span></li>
+    <li><kbd>Shift</kbd><span>+</span><kbd>R</kbd><span class="shortcuts__text">随机文章</span></li>
+  </ul>
+</div>
+
+  
+
+  
+    <script type="application/json" id="post-index">["/2019/09/linux-screen/","/2019/09/linux-dst-server/","/2019/09/ubuntu-sudo-no-password/","/2019/09/gitee-hexo/","/2019/11/windows-dst-server/","/2019/11/diy-dst-cmd/","/dst/","/2019/11/dst-nickname/","/2020/02/dst-wx78/","/2020/03/aria2-h5ai/","/2020/05/github-action-hexo/","/2020/08/python-mail/","/2020/08/openvpn","/2020/09/sublime-text-date-time/","/2023/08/sklearn-paramenter-tune/","/2020/08/frp/","/2020/07/r-mice/","/2023/08/sklearn-regression-algorithm/","/2026/08/compress-pdf-with-python/","/2024/09/mongorestore/","/2026/08/github-pull-request/"]</script>
+  
+
+  <script src="/js/main.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+
+  
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#fcfcfb" media="(prefers-color-scheme: light)" id="tc-light">
+  <meta name="theme-color" content="#171715" media="(prefers-color-scheme: dark)" id="tc-dark">
+
+  <script>
+    (function () {
+      var root = document.documentElement;
+      var key  = 'idyll-theme';
+
+      root.classList.add('js');
+
+      var saved = null;
+      try { saved = localStorage.getItem(key); } catch (err) {}
+
+      var tcLight = document.getElementById('tc-light');
+      var tcDark  = document.getElementById('tc-dark');
+      var colors  = { light: '#fcfcfb', dark: '#171715' };
+
+      function syncChrome(mode) {
+        if (tcLight && tcDark) {
+          var c = colors[mode] || null;
+          tcLight.content = c || '#fcfcfb';
+          tcDark.content  = c || '#171715';
+        }
+      }
+
+      if (saved === 'light' || saved === 'dark') {
+        root.setAttribute('data-theme', saved);
+        syncChrome(saved);
+      }
+
+      function wire() {
+        var btn = document.getElementById('theme');
+        if (!btn) return;
+
+        var state = document.getElementById('theme-state');
+
+        function paint(mode) {
+          if (mode) root.setAttribute('data-theme', mode);
+          else root.removeAttribute('data-theme');
+
+          if (state) state.textContent = btn.getAttribute('data-' + (mode || 'auto'));
+
+          syncChrome(mode);
+
+          try {
+            if (mode) localStorage.setItem(key, mode);
+            else localStorage.removeItem(key);
+          } catch (err) {}
+
+          
+          document.dispatchEvent(new CustomEvent('idyll:theme', { detail: mode || 'auto' }));
+        }
+
+        btn.addEventListener('click', function () {
+          var cur     = root.getAttribute('data-theme') || '';
+          var sysDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+          if (cur === '') paint(sysDark ? 'light' : 'dark');
+          else if (cur === 'light') paint('dark');
+          else paint('');
+        });
+
+        paint(root.getAttribute('data-theme') || '');
+      }
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', wire);
+      } else {
+        wire();
+      }
+    })();
+  </script>
+
+  <title>Linux Screen 命令详解 · 辣椒手记</title>
+  <meta name="description" content="Linux系统管理员经常需要SSH远程登录到Linux服务器，经常运行一些需要很长时间才能完成的任务，比如系统备份、传输文件等等。通常情况下我们都是为每一个这样的任务开一个远程终端窗口，因为它们执行的时间太长了，必须等待它们执行完毕，在此期间不能关掉窗口或者断开连接，否则这个任务就会被杀掉。我们这里…">
+  <meta name="author" content="辣椒小皇纸">
+  
+
+  <meta name="description" content="Linux系统管理员经常需要SSH远程登录到Linux服务器，经常运行一些需要很长时间才能完成的任务，比如系统备份、传输文件等等。通常情况下我们都是为每一个这样的任务开一个远程终端窗口，因为它们执行的时间太长了，必须等待它们执行完毕，在此期间不能关掉窗口或者断开连接，否则这个任务就会被杀掉。我们这里…">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Linux Screen 命令详解 · 辣椒手记">
+<meta property="og:url" content="https://peppernotes.top/2019/09/linux-screen/index.html">
+<meta property="og:site_name" content="辣椒手记">
+<meta property="og:description" content="Linux系统管理员经常需要SSH远程登录到Linux服务器，经常运行一些需要很长时间才能完成的任务，比如系统备份、传输文件等等。通常情况下我们都是为每一个这样的任务开一个远程终端窗口，因为它们执行的时间太长了，必须等待它们执行完毕，在此期间不能关掉窗口或者断开连接，否则这个任务就会被杀掉。我们这里…">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2019-09-20T11:16:00.000Z">
+<meta property="article:modified_time" content="2026-08-20T11:44:00.000Z">
+<meta property="article:author" content="辣椒小皇纸">
+<meta property="article:tag" content="Linux">
+<meta property="article:tag" content="SSH">
+<meta property="article:tag" content="Screen">
+<meta property="article:tag" content="服务器运维">
+<meta property="article:tag" content="终端">
+<meta name="twitter:card" content="summary">
+  
+  <link rel="canonical" href="https://peppernotes.top/2019/09/linux-screen/">
+  <link rel="icon" href="/images/favicon.svg" type="image/svg+xml">
+  
+
+  <link rel="stylesheet" href="/css/style.css">
+  
+
+<meta name="generator" content="Hexo 8.1.2"></head>
+
+<body data-idyll="copy anchor ext toc shortcut"
+      data-copy="复制"
+      data-copied="已复制"
+      data-copyfail="请按 Ctrl+C"
+      data-anchor="链接到这一节">
+
+  
+    <div class="progress" id="progress" aria-hidden="true"><i></i></div>
+  
+
+  <a class="skip" href="#main">跳到正文</a>
+
+  <header class="nav" id="nav">
+  <div class="wrap nav__in">
+    <a class="nav__brand" href="/">
+      <span class="nav__mark" aria-hidden="true"></span>
+      <span class="nav__name">辣椒手记</span>
+    </a>
+
+    <div class="nav__right">
+      <nav class="nav__links" aria-label="站点导航">
+        
+          <a class="nav__link"
+             href="/">首页</a>
+        
+          <a class="nav__link"
+             href="/archives/">归档</a>
+        
+          <a class="nav__link"
+             href="/categories/">分类</a>
+        
+          <a class="nav__link"
+             href="/tags/">标签</a>
+        
+          <a class="nav__link"
+             href="/series/">系列</a>
+        
+          <a class="nav__link"
+             href="/about/">关于</a>
+        
+      </nav>
+
+      
+        
+        <button class="theme" id="theme" type="button"
+                data-auto="跟随系统"
+                data-light="亮色"
+                data-dark="暗色">
+          <svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true" focusable="false">
+            <g class="theme__ico theme__ico--auto">
+              <circle cx="8" cy="8" r="5.6" fill="none" stroke="currentColor" stroke-width="1.4"/>
+              <path d="M8 2.4a5.6 5.6 0 0 0 0 11.2z" fill="currentColor"/>
+            </g>
+            <g class="theme__ico theme__ico--light"
+               fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round">
+              <circle cx="8" cy="8" r="3.1"/>
+              <path d="M8 1.3v1.3M8 13.4v1.3M14.7 8h-1.3M2.6 8H1.3M12.74 3.26l-.92.92M4.18 11.82l-.92.92M12.74 12.74l-.92-.92M4.18 4.18l-.92-.92"/>
+            </g>
+            <g class="theme__ico theme__ico--dark">
+              <path d="M14 8.53A6 6 0 1 1 7.47 2 4.67 4.67 0 0 0 14 8.53z"
+                    fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
+            </g>
+          </svg>
+          
+          <span class="sr-only" id="theme-state" aria-live="polite">跟随系统</span>
+        </button>
+      
+    </div>
+  </div>
+</header>
+
+
+  <main class="main" id="main">
+
+<article class="post">
+  <header class="wrap post__head">
+    
+      <p class="post__kicker">
+        <a href="/categories/%E6%8A%80%E6%9C%AF/">技术</a><span class="sep">/</span><a href="/categories/%E6%8A%80%E6%9C%AF/Linux/">Linux</a>
+      </p>
+    
+
+    <h1 class="post__title">Linux Screen 命令详解</h1>
+
+    <div class="post__meta">
+      
+      <time datetime="2019-09-20T11:16:00.000Z"><span class="sr-only">发布于 </span>2019-09-20</time>
+      
+        <span class="dot" aria-hidden="true">·</span>
+        <span>970 字</span>
+      
+      
+        <span class="dot" aria-hidden="true">·</span>
+        <span>3 分钟</span>
+      
+      
+        <span class="dot" aria-hidden="true">·</span>
+        <span>更新于 2026-08-20</span>
+      
+    </div>
+  </header>
+
+  
+<nav class="toc" aria-label="目录">
+  <p class="toc__label">目录</p>
+  <ol class="toc__list">
+    
+      <li>
+        <a class="toc__link" href="#Screen介绍" data-toc-id="Screen介绍" title="Screen介绍">Screen介绍</a>
+        
+      </li>
+    
+      <li>
+        <a class="toc__link" href="#语法" data-toc-id="语法" title="语法">语法</a>
+        
+      </li>
+    
+      <li>
+        <a class="toc__link" href="#常用screen参数" data-toc-id="常用screen参数" title="常用screen参数">常用screen参数</a>
+        
+      </li>
+    
+      <li>
+        <a class="toc__link" href="#饥荒服务器运用screen实战" data-toc-id="饥荒服务器运用screen实战" title="饥荒服务器运用screen实战">饥荒服务器运用screen实战</a>
+        
+          <ol class="toc__list toc__list--sub">
+            
+              <li><a class="toc__link toc__link--sub" href="#安装screen" data-toc-id="安装screen" title="安装screen">安装screen</a></li>
+            
+              <li><a class="toc__link toc__link--sub" href="#用screen来启动饥荒服务器" data-toc-id="用screen来启动饥荒服务器" title="用screen来启动饥荒服务器">用screen来启动饥荒服务器</a></li>
+            
+              <li><a class="toc__link toc__link--sub" href="#恢复后台运行的screen" data-toc-id="恢复后台运行的screen" title="恢复后台运行的screen">恢复后台运行的screen</a></li>
+            
+              <li><a class="toc__link toc__link--sub" href="#使当前前台的screen重新进入后台" data-toc-id="使当前前台的screen重新进入后台" title="使当前前台的screen重新进入后台">使当前前台的screen重新进入后台</a></li>
+            
+          </ol>
+        
+      </li>
+    
+  </ol>
+</nav>
+
+
+  <div class="wrap prose" id="content"><blockquote>
+<p>Linux系统管理员经常需要SSH远程登录到Linux服务器，经常运行一些需要很长时间才能完成的任务，比如系统备份、传输文件等等。<br/><br>通常情况下我们都是为每一个这样的任务开一个远程终端窗口，因为它们执行的时间太长了，必须等待它们执行完毕，在此期间不能关掉窗口或者断开连接，否则这个任务就会被杀掉。<br/><br>我们这里就是需要长期开饥荒服务器。</p>
+</blockquote>
+<span id="more"></span>
+
+<h2 id="Screen介绍"><a href="#Screen介绍" class="headerlink" title="Screen介绍"></a>Screen介绍</h2><ul>
+<li>Linux screen命令用于多重视窗管理程序。</li>
+<li>用户可以通过该软件同时连接多个本地或远程的命令行会话，并在其间自由切换。</li>
+<li>只要Screen本身没有终止，在其内部运行的会话都可以恢复。这一点对于远程登录的用户特别有用——即使网络连接中断，用户也不会失去对已经打开的命令行会话的控制。只要再次登录到主机上执行screen -r就可以恢复会话的运行。同样在暂时离开的时候，也可以执行分离命令detach，在保证里面的程序正常运行的情况下让Screen挂起（切换到后台）。</li>
+</ul>
+<h2 id="语法"><a href="#语法" class="headerlink" title="语法"></a>语法</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">screen [-AmRvx -<span class="built_in">ls</span> -wipe][-d &lt;作业名称&gt;][-h &lt;行数&gt;][-r &lt;作业名称&gt;][-s ][-S &lt;作业名称&gt;]</span><br></pre></td></tr></table></figure>
+
+<p><strong>参数说明</strong></p>
+<p>-d &lt;作业名称&gt; 　将指定的screen作业离线。</p>
+<p>-m 　即使目前已在作业中的screen作业，仍强制建立新的screen作业。</p>
+<p>-r &lt;作业名称&gt; 　恢复离线的screen作业。</p>
+<p>-S &lt;作业名称&gt; 　指定screen作业的名称。</p>
+<p>-ls或–list 　显示目前所有的screen作业。</p>
+<h2 id="常用screen参数"><a href="#常用screen参数" class="headerlink" title="常用screen参数"></a>常用screen参数</h2><p>screen -S yourname -&gt; 新建一个叫yourname的session</p>
+<p>screen -ls -&gt; 列出当前所有的session</p>
+<p>screen -r yourname -&gt; 回到yourname这个session</p>
+<p>screen -d yourname -&gt; 远程detach某个session</p>
+<p><strong>在每个screen session 下，所有命令都以 ctrl+a(C-a) 开始。</strong></p>
+<p>C-a d -&gt; detach，暂时离开当前session，将目前的 screen session (可能含有多个 windows) 丢到后台执行，并会回到还没进 screen 时的状态，此时在 screen session 里，每个 window 内运行的 process (无论是前台&#x2F;后台)都在继续执行，即使 logout 也不影响。</p>
+<p>C-a k -&gt; kill window，强行关闭当前的 window</p>
+<h2 id="饥荒服务器运用screen实战"><a href="#饥荒服务器运用screen实战" class="headerlink" title="饥荒服务器运用screen实战"></a>饥荒服务器运用screen实战</h2><h3 id="安装screen"><a href="#安装screen" class="headerlink" title="安装screen"></a>安装screen</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">sudo</span> apt-get install screen</span><br></pre></td></tr></table></figure>
+
+<h3 id="用screen来启动饥荒服务器"><a href="#用screen来启动饥荒服务器" class="headerlink" title="用screen来启动饥荒服务器"></a>用screen来启动饥荒服务器</h3><p><strong>启动地面服务器</strong> </p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">screen -dmS m ~/dst/bin/master.sh</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>释义：<br>参数<code>d</code>让screen在后台启动<br>参数<code>m</code>指创建一个新的screen<br>参数<code>S</code>指定新创建的screen的名字<br><code>-dmS</code>后面的那个m是新创建的screen的名字<br><code>~/dst/bin/master.sh</code>是在新创建的screen中运行的代码</p>
+</blockquote>
+<p><strong>启动洞穴服务器</strong> </p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">screen -dmS c ~/dst/bin/caves.sh</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>同理，该代码的意思是在后台创建一个名字为c的screen，并在screen中运行代码<code>~/dst/bin/caves.sh</code></p>
+</blockquote>
+<p>在<a target="_blank" rel="noopener" href="https://jupitersh.github.io/dst-server-guide">Linux搭建饥荒服务器指南</a> 这篇教程教程中，不需要执行该命令，因为我已经将该命令写入<code>startmaster.sh</code>和<code>startcaves.sh</code>这两个脚本中，并通过<code>launch.sh</code>来运行这两个脚本，详见<a target="_blank" rel="noopener" href="https://jupitersh.github.io/dst-server-guide#%E5%90%AF%E5%8A%A8%E8%84%9A%E6%9C%AC">教程</a>。</p>
+<h3 id="恢复后台运行的screen"><a href="#恢复后台运行的screen" class="headerlink" title="恢复后台运行的screen"></a>恢复后台运行的screen</h3><p>饥荒服务器运行后，查看日志可以用<a target="_blank" rel="noopener" href="https://jupitersh.github.io/dst-server-guide#%E6%B5%8B%E8%AF%95%E4%B8%A4%E4%B8%AA%E6%9C%8D%E5%8A%A1%E5%99%A8">tail命令</a>的办法，也可以用screen命令恢复之前后台运行的两个screen。</p>
+<p>两个screen的名字分别是m和c。</p>
+<h4 id="恢复名字为m的screen"><a href="#恢复名字为m的screen" class="headerlink" title="恢复名字为m的screen"></a>恢复名字为m的screen</h4><p>名字为m的screen代表地面，代码为</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">screen -dr m</span><br></pre></td></tr></table></figure>
+
+<h4 id="恢复名字为c的screen"><a href="#恢复名字为c的screen" class="headerlink" title="恢复名字为c的screen"></a>恢复名字为c的screen</h4><p>名字为c的screen代表洞穴，代码为</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">screen -dr c</span><br></pre></td></tr></table></figure>
+
+<h3 id="使当前前台的screen重新进入后台"><a href="#使当前前台的screen重新进入后台" class="headerlink" title="使当前前台的screen重新进入后台"></a>使当前前台的screen重新进入后台</h3><p>按组合键<code>Ctrl</code>+<code>A</code>，再按<code>D</code>即可使screen进入后台</p>
+</div>
+
+  <footer class="wrap post__foot">
+    
+      <div class="post__tags">
+        <a class="pill pill--link" href="/tags/Linux/">Linux</a><a class="pill pill--link" href="/tags/Screen/">Screen</a><a class="pill pill--link" href="/tags/SSH/">SSH</a><a class="pill pill--link" href="/tags/%E7%BB%88%E7%AB%AF/">终端</a><a class="pill pill--link" href="/tags/%E6%9C%8D%E5%8A%A1%E5%99%A8%E8%BF%90%E7%BB%B4/">服务器运维</a>
+      </div>
+    
+
+    
+
+    
+<section class="related" aria-label="相关文章">
+  <p class="related__label">相关文章</p>
+  <ul class="related__list">
+    
+      <li>
+        <a class="related__link" href="/2020/03/aria2-h5ai/">
+          <span class="related__title">利用 Aria2 及 h5ai 在服务器上搭建影音中心<span class="item__arrow" aria-hidden="true">→</span></span>
+          <time class="related__date" datetime="2020-03-06T07:15:00.000Z">2020-03-06</time>
+        </a>
+      </li>
+    
+      <li>
+        <a class="related__link" href="/2019/09/ubuntu-sudo-no-password/">
+          <span class="related__title">Ubuntu 在运行 sudo 命令时免密码<span class="item__arrow" aria-hidden="true">→</span></span>
+          <time class="related__date" datetime="2019-09-22T09:33:00.000Z">2019-09-22</time>
+        </a>
+      </li>
+    
+      <li>
+        <a class="related__link" href="/2020/08/frp/">
+          <span class="related__title">利用 frp 进行内网穿透<span class="item__arrow" aria-hidden="true">→</span></span>
+          <time class="related__date" datetime="2020-08-22T06:31:02.000Z">2020-08-22</time>
+        </a>
+      </li>
+    
+  </ul>
+</section>
+
+
+    
+      <nav class="nextprev" aria-label="归档">
+        
+          <a class="nextprev__card" href="/2019/09/gitee-hexo/" rel="prev">
+            <span class="nextprev__label"><span aria-hidden="true">←</span> 上一篇</span>
+            <span class="nextprev__title">在码云上利用 Hexo 搭建博客</span>
+          </a>
+        
+
+        
+          <a class="nextprev__card nextprev__card--r" href="/2019/09/linux-dst-server/" rel="next">
+            <span class="nextprev__label">下一篇 <span aria-hidden="true">→</span></span>
+            <span class="nextprev__title">Linux 搭建饥荒服务器指南</span>
+          </a>
+        
+      </nav>
+    
+  </footer>
+</article>
+
+
+
+
+
+</main>
+
+  
+<footer class="foot">
+  <div class="wrap foot__in">
+    <div class="foot__left">
+      
+      <p class="foot__copy">© 2026 辣椒小皇纸</p>
+    </div>
+
+    <div class="foot__right">
+      
+        <a class="foot__link" href="https://github.com/suhuang64" target="_blank" rel="noopener noreferrer">GitHub</a>
+      
+      
+    </div>
+  </div>
+</footer>
+
+
+  
+    <button class="totop" id="totop" type="button" aria-label="回到顶部">
+      <svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true" focusable="false">
+        <path d="M8 3.6l5.2 5.2-1.1 1.1L8.8 6.8V13h-1.6V6.8L3.9 9.9 2.8 8.8z" fill="currentColor"/>
+      </svg>
+    </button>
+  
+
+  
+    
+<div class="shortcuts" id="shortcuts" aria-hidden="true">
+  <p class="shortcuts__label">快捷键</p>
+  <ul class="shortcuts__list">
+    <li><kbd>Shift</kbd><span>+</span><kbd>T</kbd><span class="shortcuts__text">切换主题</span></li>
+    <li><kbd>Shift</kbd><span>+</span><kbd>H</kbd><span class="shortcuts__text">回到首页</span></li>
+    <li><kbd>Shift</kbd><span>+</span><kbd>R</kbd><span class="shortcuts__text">随机文章</span></li>
+  </ul>
+</div>
+
+  
+
+  
+    <script type="application/json" id="post-index">["/2019/09/linux-screen/","/2019/09/linux-dst-server/","/2019/09/ubuntu-sudo-no-password/","/2019/09/gitee-hexo/","/2019/11/windows-dst-server/","/2019/11/diy-dst-cmd/","/dst/","/2019/11/dst-nickname/","/2020/02/dst-wx78/","/2020/03/aria2-h5ai/","/2020/05/github-action-hexo/","/2020/08/python-mail/","/2020/08/openvpn","/2020/09/sublime-text-date-time/","/2023/08/sklearn-paramenter-tune/","/2020/08/frp/","/2020/07/r-mice/","/2023/08/sklearn-regression-algorithm/","/2026/08/compress-pdf-with-python/","/2024/09/mongorestore/","/2026/08/github-pull-request/"]</script>
+  
+
+  <script src="/js/main.js" defer></script>
+</body>
+</html>

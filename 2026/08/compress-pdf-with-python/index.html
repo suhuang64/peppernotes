@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+
+  
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#fcfcfb" media="(prefers-color-scheme: light)" id="tc-light">
+  <meta name="theme-color" content="#171715" media="(prefers-color-scheme: dark)" id="tc-dark">
+
+  <script>
+    (function () {
+      var root = document.documentElement;
+      var key  = 'idyll-theme';
+
+      root.classList.add('js');
+
+      var saved = null;
+      try { saved = localStorage.getItem(key); } catch (err) {}
+
+      var tcLight = document.getElementById('tc-light');
+      var tcDark  = document.getElementById('tc-dark');
+      var colors  = { light: '#fcfcfb', dark: '#171715' };
+
+      function syncChrome(mode) {
+        if (tcLight && tcDark) {
+          var c = colors[mode] || null;
+          tcLight.content = c || '#fcfcfb';
+          tcDark.content  = c || '#171715';
+        }
+      }
+
+      if (saved === 'light' || saved === 'dark') {
+        root.setAttribute('data-theme', saved);
+        syncChrome(saved);
+      }
+
+      function wire() {
+        var btn = document.getElementById('theme');
+        if (!btn) return;
+
+        var state = document.getElementById('theme-state');
+
+        function paint(mode) {
+          if (mode) root.setAttribute('data-theme', mode);
+          else root.removeAttribute('data-theme');
+
+          if (state) state.textContent = btn.getAttribute('data-' + (mode || 'auto'));
+
+          syncChrome(mode);
+
+          try {
+            if (mode) localStorage.setItem(key, mode);
+            else localStorage.removeItem(key);
+          } catch (err) {}
+
+          
+          document.dispatchEvent(new CustomEvent('idyll:theme', { detail: mode || 'auto' }));
+        }
+
+        btn.addEventListener('click', function () {
+          var cur     = root.getAttribute('data-theme') || '';
+          var sysDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+          if (cur === '') paint(sysDark ? 'light' : 'dark');
+          else if (cur === 'light') paint('dark');
+          else paint('');
+        });
+
+        paint(root.getAttribute('data-theme') || '');
+      }
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', wire);
+      } else {
+        wire();
+      }
+    })();
+  </script>
+
+  <title>使用 Python 质量压缩 PDF · 辣椒手记</title>
+  <meta name="description" content="PDF 文件经常因为嵌入了大量高清图片而体积过大。直接把整页转换成图片再重新生成 PDF，虽然可以显著减小体积，却会让文字和矢量图形失去原有的清晰度，也可能破坏页面尺寸、链接和文档结构。 本文提供一个基于 PyMuPDF 的脚本：只重新编码 PDF 内嵌的图片，同时尽量保留文字、矢量内容、页面尺寸和…">
+  <meta name="author" content="辣椒小皇纸">
+  
+
+  <meta name="description" content="PDF 文件经常因为嵌入了大量高清图片而体积过大。直接把整页转换成图片再重新生成 PDF，虽然可以显著减小体积，却会让文字和矢量图形失去原有的清晰度，也可能破坏页面尺寸、链接和文档结构。 本文提供一个基于 PyMuPDF 的脚本：只重新编码 PDF 内嵌的图片，同时尽量保留文字、矢量内容、页面尺寸和…">
+<meta property="og:type" content="article">
+<meta property="og:title" content="使用 Python 质量压缩 PDF · 辣椒手记">
+<meta property="og:url" content="https://peppernotes.top/2026/08/compress-pdf-with-python/index.html">
+<meta property="og:site_name" content="辣椒手记">
+<meta property="og:description" content="PDF 文件经常因为嵌入了大量高清图片而体积过大。直接把整页转换成图片再重新生成 PDF，虽然可以显著减小体积，却会让文字和矢量图形失去原有的清晰度，也可能破坏页面尺寸、链接和文档结构。 本文提供一个基于 PyMuPDF 的脚本：只重新编码 PDF 内嵌的图片，同时尽量保留文字、矢量内容、页面尺寸和…">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2026-08-21T04:00:00.000Z">
+<meta property="article:modified_time" content="2026-08-21T04:00:00.000Z">
+<meta property="article:author" content="辣椒小皇纸">
+<meta property="article:tag" content="PDF">
+<meta property="article:tag" content="PyMuPDF">
+<meta property="article:tag" content="Python">
+<meta property="article:tag" content="文件压缩">
+<meta name="twitter:card" content="summary">
+  
+  <link rel="canonical" href="https://peppernotes.top/2026/08/compress-pdf-with-python/">
+  <link rel="icon" href="/images/favicon.svg" type="image/svg+xml">
+  
+
+  <link rel="stylesheet" href="/css/style.css">
+  
+
+<meta name="generator" content="Hexo 8.1.2"></head>
+
+<body data-idyll="copy anchor ext toc shortcut"
+      data-copy="复制"
+      data-copied="已复制"
+      data-copyfail="请按 Ctrl+C"
+      data-anchor="链接到这一节">
+
+  
+    <div class="progress" id="progress" aria-hidden="true"><i></i></div>
+  
+
+  <a class="skip" href="#main">跳到正文</a>
+
+  <header class="nav" id="nav">
+  <div class="wrap nav__in">
+    <a class="nav__brand" href="/">
+      <span class="nav__mark" aria-hidden="true"></span>
+      <span class="nav__name">辣椒手记</span>
+    </a>
+
+    <div class="nav__right">
+      <nav class="nav__links" aria-label="站点导航">
+        
+          <a class="nav__link"
+             href="/">首页</a>
+        
+          <a class="nav__link"
+             href="/archives/">归档</a>
+        
+          <a class="nav__link"
+             href="/categories/">分类</a>
+        
+          <a class="nav__link"
+             href="/tags/">标签</a>
+        
+          <a class="nav__link"
+             href="/series/">系列</a>
+        
+          <a class="nav__link"
+             href="/about/">关于</a>
+        
+      </nav>
+
+      
+        
+        <button class="theme" id="theme" type="button"
+                data-auto="跟随系统"
+                data-light="亮色"
+                data-dark="暗色">
+          <svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true" focusable="false">
+            <g class="theme__ico theme__ico--auto">
+              <circle cx="8" cy="8" r="5.6" fill="none" stroke="currentColor" stroke-width="1.4"/>
+              <path d="M8 2.4a5.6 5.6 0 0 0 0 11.2z" fill="currentColor"/>
+            </g>
+            <g class="theme__ico theme__ico--light"
+               fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round">
+              <circle cx="8" cy="8" r="3.1"/>
+              <path d="M8 1.3v1.3M8 13.4v1.3M14.7 8h-1.3M2.6 8H1.3M12.74 3.26l-.92.92M4.18 11.82l-.92.92M12.74 12.74l-.92-.92M4.18 4.18l-.92-.92"/>
+            </g>
+            <g class="theme__ico theme__ico--dark">
+              <path d="M14 8.53A6 6 0 1 1 7.47 2 4.67 4.67 0 0 0 14 8.53z"
+                    fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
+            </g>
+          </svg>
+          
+          <span class="sr-only" id="theme-state" aria-live="polite">跟随系统</span>
+        </button>
+      
+    </div>
+  </div>
+</header>
+
+
+  <main class="main" id="main">
+
+<article class="post">
+  <header class="wrap post__head">
+    
+      <p class="post__kicker">
+        <a href="/categories/%E6%8A%80%E6%9C%AF/">技术</a><span class="sep">/</span><a href="/categories/%E6%8A%80%E6%9C%AF/Python/">Python</a>
+      </p>
+    
+
+    <h1 class="post__title">使用 Python 质量压缩 PDF</h1>
+
+    <div class="post__meta">
+      
+      <time datetime="2026-08-21T04:00:00.000Z"><span class="sr-only">发布于 </span>2026-08-21</time>
+      
+        <span class="dot" aria-hidden="true">·</span>
+        <span>1,791 字</span>
+      
+      
+        <span class="dot" aria-hidden="true">·</span>
+        <span>6 分钟</span>
+      
+      
+    </div>
+  </header>
+
+  
+<nav class="toc" aria-label="目录">
+  <p class="toc__label">目录</p>
+  <ol class="toc__list">
+    
+      <li>
+        <a class="toc__link" href="#一、脚本特点" data-toc-id="一、脚本特点" title="一、脚本特点">一、脚本特点</a>
+        
+      </li>
+    
+      <li>
+        <a class="toc__link" href="#二、完整代码" data-toc-id="二、完整代码" title="二、完整代码">二、完整代码</a>
+        
+      </li>
+    
+      <li>
+        <a class="toc__link" href="#三、安装依赖" data-toc-id="三、安装依赖" title="三、安装依赖">三、安装依赖</a>
+        
+      </li>
+    
+      <li>
+        <a class="toc__link" href="#四、使用方法" data-toc-id="四、使用方法" title="四、使用方法">四、使用方法</a>
+        
+      </li>
+    
+      <li>
+        <a class="toc__link" href="#五、使用时的注意事项" data-toc-id="五、使用时的注意事项" title="五、使用时的注意事项">五、使用时的注意事项</a>
+        
+      </li>
+    
+      <li>
+        <a class="toc__link" href="#六、总结" data-toc-id="六、总结" title="六、总结">六、总结</a>
+        
+      </li>
+    
+  </ol>
+</nav>
+
+
+  <div class="wrap prose" id="content"><p>PDF 文件经常因为嵌入了大量高清图片而体积过大。直接把整页转换成图片再重新生成 PDF，虽然可以显著减小体积，却会让文字和矢量图形失去原有的清晰度，也可能破坏页面尺寸、链接和文档结构。</p>
+<p>本文提供一个基于 <a target="_blank" rel="noopener" href="https://pymupdf.readthedocs.io/">PyMuPDF</a> 的脚本：只重新编码 PDF 内嵌的图片，同时尽量保留文字、矢量内容、页面尺寸和超链接。脚本还会在压缩前后计算文本与页面几何信息的指纹，避免生成内容异常的文件。</p>
+<span id="more"></span>
+
+<h2 id="一、脚本特点"><a href="#一、脚本特点" class="headerlink" title="一、脚本特点"></a>一、脚本特点</h2><p>这个脚本有以下特点：</p>
+<ul>
+<li>通过质量参数控制图片重新编码质量，数值范围为 <code>1-100</code>；</li>
+<li>不设置目标文件体积，最终大小取决于原始 PDF 中图片的数量、尺寸和编码方式；</li>
+<li>文字和矢量内容不会被栅格化；</li>
+<li>尽量保留原始页面尺寸、旋转信息和超链接；</li>
+<li>使用临时文件写入，避免压缩失败时覆盖原始文件；</li>
+<li>压缩完成后校验页数、文本指纹和页面几何信息。</li>
+</ul>
+<p>需要注意的是，图片会重新编码，因此这不是像素级无损压缩。质量越高，通常画质越好，但文件体积也越大。</p>
+<h2 id="二、完整代码"><a href="#二、完整代码" class="headerlink" title="二、完整代码"></a>二、完整代码</h2><p>将下面的代码保存为 <code>compress_pdf.py</code>：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br><span class="line">158</span><br><span class="line">159</span><br><span class="line">160</span><br><span class="line">161</span><br><span class="line">162</span><br><span class="line">163</span><br><span class="line">164</span><br><span class="line">165</span><br><span class="line">166</span><br><span class="line">167</span><br><span class="line">168</span><br><span class="line">169</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#!/usr/bin/env python3</span></span><br><span class="line"><span class="string">&quot;&quot;&quot;按指定图片压缩质量压缩 PDF，尽量保留文字、矢量内容、页面尺寸和链接。</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">图片会重新编码以减小体积，因此不是像素级无损；文字和版式不会被栅格化。</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">示例：</span></span><br><span class="line"><span class="string">python compress_pdf.py input.pdf 92</span></span><br><span class="line"><span class="string">python compress_pdf.py input.pdf 85 output.pdf</span></span><br><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> __future__ <span class="keyword">import</span> annotations</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> argparse</span><br><span class="line"><span class="keyword">import</span> hashlib</span><br><span class="line"><span class="keyword">import</span> os</span><br><span class="line"><span class="keyword">import</span> sys</span><br><span class="line"><span class="keyword">import</span> tempfile</span><br><span class="line"><span class="keyword">from</span> pathlib <span class="keyword">import</span> Path</span><br><span class="line"></span><br><span class="line"><span class="keyword">try</span>:</span><br><span class="line">    <span class="keyword">import</span> fitz  <span class="comment"># PyMuPDF</span></span><br><span class="line"><span class="keyword">except</span> ImportError <span class="keyword">as</span> exc:  <span class="comment"># pragma: no cover - 仅在环境缺包时触发</span></span><br><span class="line">    <span class="keyword">raise</span> SystemExit(</span><br><span class="line">        <span class="string">&quot;缺少 PyMuPDF。请使用当前 Python 环境安装：\n&quot;</span></span><br><span class="line">        <span class="string">&quot;/Users/pepper/.venv/codex/bin/pip install PyMuPDF&quot;</span></span><br><span class="line">    ) <span class="keyword">from</span> exc</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">parse_args</span>() -&gt; argparse.Namespace:</span><br><span class="line">    parser = argparse.ArgumentParser(</span><br><span class="line">        description=<span class="string">&quot;按指定压缩质量压缩 PDF 内嵌图片，不设置目标文件体积。&quot;</span></span><br><span class="line">    )</span><br><span class="line">    parser.add_argument(<span class="string">&quot;input&quot;</span>, <span class="built_in">type</span>=Path, <span class="built_in">help</span>=<span class="string">&quot;输入 PDF 文件&quot;</span>)</span><br><span class="line">    parser.add_argument(</span><br><span class="line">        <span class="string">&quot;quality&quot;</span>,</span><br><span class="line">        <span class="built_in">type</span>=<span class="built_in">int</span>,</span><br><span class="line">        <span class="built_in">help</span>=<span class="string">&quot;压缩质量/比例，1-100；数值越高，画质越好、文件通常越大&quot;</span>,</span><br><span class="line">    )</span><br><span class="line">    parser.add_argument(</span><br><span class="line">        <span class="string">&quot;output&quot;</span>,</span><br><span class="line">        <span class="built_in">type</span>=Path,</span><br><span class="line">        nargs=<span class="string">&quot;?&quot;</span>,</span><br><span class="line">        <span class="built_in">help</span>=<span class="string">&quot;输出 PDF 文件；省略时自动生成 *_compressed.pdf&quot;</span>,</span><br><span class="line">    )</span><br><span class="line">    <span class="keyword">return</span> parser.parse_args()</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">text_fingerprint</span>(<span class="params"></span></span><br><span class="line"><span class="params">    pdf_path: Path,</span></span><br><span class="line"><span class="params"></span>) -&gt; <span class="built_in">tuple</span>[<span class="built_in">int</span>, <span class="built_in">str</span>, <span class="built_in">tuple</span>[<span class="built_in">tuple</span>[<span class="built_in">float</span>, <span class="built_in">float</span>, <span class="built_in">int</span>], ...]]:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;返回页数、文本指纹和页面几何信息。&quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">with</span> fitz.<span class="built_in">open</span>(pdf_path) <span class="keyword">as</span> document:</span><br><span class="line">        page_text = [page.get_text(<span class="string">&quot;text&quot;</span>) <span class="keyword">for</span> page <span class="keyword">in</span> document]</span><br><span class="line">        geometry = <span class="built_in">tuple</span>(</span><br><span class="line">            (</span><br><span class="line">                <span class="built_in">round</span>(page.rect.width, <span class="number">3</span>),</span><br><span class="line">                <span class="built_in">round</span>(page.rect.height, <span class="number">3</span>),</span><br><span class="line">                page.rotation,</span><br><span class="line">            )</span><br><span class="line">            <span class="keyword">for</span> page <span class="keyword">in</span> document</span><br><span class="line">        )</span><br><span class="line">        digest = hashlib.sha256(</span><br><span class="line">            <span class="string">&quot;\n\f\n&quot;</span>.join(page_text).encode(<span class="string">&quot;utf-8&quot;</span>)</span><br><span class="line">        ).hexdigest()</span><br><span class="line">        <span class="keyword">return</span> <span class="built_in">len</span>(page_text), digest, geometry</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">compress_once</span>(<span class="params">input_path: Path, temporary_path: Path, quality: <span class="built_in">int</span></span>) -&gt; <span class="literal">None</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;使用 PyMuPDF 重编码图片并写入临时 PDF。&quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">with</span> fitz.<span class="built_in">open</span>(input_path) <span class="keyword">as</span> document:</span><br><span class="line">        document.rewrite_images(</span><br><span class="line">            dpi_threshold=<span class="number">0</span>,</span><br><span class="line">            dpi_target=<span class="number">0</span>,</span><br><span class="line">            quality=quality,</span><br><span class="line">            <span class="comment"># lossy=True：允许 JPEG 等有损编码以显著减小体积。</span></span><br><span class="line">            <span class="comment"># lossless=True：同时处理原来使用 PNG/Flate 等无损编码的图片。</span></span><br><span class="line">            lossy=<span class="literal">True</span>,</span><br><span class="line">            lossless=<span class="literal">True</span>,</span><br><span class="line">            bitonal=<span class="literal">True</span>,</span><br><span class="line">            color=<span class="literal">True</span>,</span><br><span class="line">            gray=<span class="literal">True</span>,</span><br><span class="line">        )</span><br><span class="line">        document.save(</span><br><span class="line">            temporary_path,</span><br><span class="line">            garbage=<span class="number">4</span>,</span><br><span class="line">            clean=<span class="literal">True</span>,</span><br><span class="line">            deflate=<span class="literal">True</span>,</span><br><span class="line">            deflate_images=<span class="literal">False</span>,</span><br><span class="line">            deflate_fonts=<span class="literal">True</span>,</span><br><span class="line">            use_objstms=<span class="literal">True</span>,</span><br><span class="line">            compression_effort=<span class="number">100</span>,</span><br><span class="line">        )</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">compress_pdf</span>(<span class="params">input_path: Path, output_path: Path, quality: <span class="built_in">int</span></span>) -&gt; <span class="built_in">int</span>:</span><br><span class="line">    input_path = input_path.expanduser().resolve()</span><br><span class="line">    output_path = output_path.expanduser().resolve()</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> <span class="keyword">not</span> input_path.is_file():</span><br><span class="line">        <span class="keyword">raise</span> FileNotFoundError(<span class="string">f&quot;找不到输入文件：<span class="subst">&#123;input_path&#125;</span>&quot;</span>)</span><br><span class="line">    <span class="keyword">if</span> input_path.suffix.lower() != <span class="string">&quot;.pdf&quot;</span>:</span><br><span class="line">        <span class="keyword">raise</span> ValueError(<span class="string">&quot;输入文件必须是 PDF&quot;</span>)</span><br><span class="line">    <span class="keyword">if</span> output_path == input_path:</span><br><span class="line">        <span class="keyword">raise</span> ValueError(<span class="string">&quot;输出路径不能与输入路径相同，以免覆盖原文件&quot;</span>)</span><br><span class="line">    <span class="keyword">if</span> <span class="keyword">not</span> <span class="number">1</span> &lt;= quality &lt;= <span class="number">100</span>:</span><br><span class="line">        <span class="keyword">raise</span> ValueError(<span class="string">&quot;压缩质量/比例必须是 1-100 的整数&quot;</span>)</span><br><span class="line"></span><br><span class="line">    output_path.parent.mkdir(parents=<span class="literal">True</span>, exist_ok=<span class="literal">True</span>)</span><br><span class="line">    source_fingerprint = text_fingerprint(input_path)</span><br><span class="line">    temporary_path: Path | <span class="literal">None</span> = <span class="literal">None</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">try</span>:</span><br><span class="line">        <span class="keyword">with</span> tempfile.NamedTemporaryFile(</span><br><span class="line">            prefix=<span class="string">f&quot;.<span class="subst">&#123;output_path.stem&#125;</span>.&quot;</span>,</span><br><span class="line">            suffix=<span class="string">&quot;.tmp.pdf&quot;</span>,</span><br><span class="line">            <span class="built_in">dir</span>=output_path.parent,</span><br><span class="line">            delete=<span class="literal">False</span>,</span><br><span class="line">        ) <span class="keyword">as</span> temporary_file:</span><br><span class="line">            temporary_path = Path(temporary_file.name)</span><br><span class="line"></span><br><span class="line">        <span class="comment"># PyMuPDF 需要接管输出路径，因此删除占位临时文件后再保存。</span></span><br><span class="line">        temporary_path.unlink()</span><br><span class="line">        compress_once(input_path, temporary_path, quality)</span><br><span class="line">        size = temporary_path.stat().st_size</span><br><span class="line">        os.replace(temporary_path, output_path)</span><br><span class="line">        temporary_path = <span class="literal">None</span></span><br><span class="line"></span><br><span class="line">        output_fingerprint = text_fingerprint(output_path)</span><br><span class="line">        <span class="keyword">if</span> output_fingerprint != source_fingerprint:</span><br><span class="line">            <span class="keyword">try</span>:</span><br><span class="line">                output_path.unlink()</span><br><span class="line">            <span class="keyword">except</span> FileNotFoundError:</span><br><span class="line">                <span class="keyword">pass</span></span><br><span class="line">            <span class="keyword">raise</span> RuntimeError(<span class="string">&quot;压缩后文本或页面几何信息与原文件不一致，已删除异常输出。&quot;</span>)</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> size</span><br><span class="line">    <span class="keyword">finally</span>:</span><br><span class="line">        <span class="keyword">if</span> temporary_path <span class="keyword">is</span> <span class="keyword">not</span> <span class="literal">None</span>:</span><br><span class="line">            <span class="keyword">try</span>:</span><br><span class="line">                temporary_path.unlink()</span><br><span class="line">            <span class="keyword">except</span> FileNotFoundError:</span><br><span class="line">                <span class="keyword">pass</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">main</span>() -&gt; <span class="built_in">int</span>:</span><br><span class="line">    args = parse_args()</span><br><span class="line">    input_path = args.<span class="built_in">input</span></span><br><span class="line">    output_path = args.output</span><br><span class="line">    <span class="keyword">if</span> output_path <span class="keyword">is</span> <span class="literal">None</span>:</span><br><span class="line">        output_path = input_path.with_name(<span class="string">f&quot;<span class="subst">&#123;input_path.stem&#125;</span>_compressed.pdf&quot;</span>)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">try</span>:</span><br><span class="line">        size = compress_pdf(</span><br><span class="line">            input_path=input_path,</span><br><span class="line">            output_path=output_path,</span><br><span class="line">            quality=args.quality,</span><br><span class="line">        )</span><br><span class="line">    <span class="keyword">except</span> (FileNotFoundError, ValueError, RuntimeError) <span class="keyword">as</span> exc:</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&quot;错误：<span class="subst">&#123;exc&#125;</span>&quot;</span>, file=sys.stderr)</span><br><span class="line">        <span class="keyword">return</span> <span class="number">1</span></span><br><span class="line"></span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;已生成：<span class="subst">&#123;output_path.expanduser().resolve()&#125;</span>&quot;</span>)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;文件大小：<span class="subst">&#123;size:,&#125;</span> 字节（<span class="subst">&#123;size / <span class="number">1_000_000</span>:<span class="number">.2</span>f&#125;</span> MB）&quot;</span>)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;压缩质量/比例：<span class="subst">&#123;args.quality&#125;</span>&quot;</span>)</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">&quot;__main__&quot;</span>:</span><br><span class="line">    <span class="keyword">raise</span> SystemExit(main())</span><br></pre></td></tr></table></figure>
+
+<h2 id="三、安装依赖"><a href="#三、安装依赖" class="headerlink" title="三、安装依赖"></a>三、安装依赖</h2><p>建议在当前 Python 环境中安装 PyMuPDF：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">/Users/pepper/.venv/codex/bin/pip install PyMuPDF</span><br></pre></td></tr></table></figure>
+
+<p>如果使用的是其他虚拟环境，将命令中的 Python 和 pip 路径替换为对应环境即可。</p>
+<h2 id="四、使用方法"><a href="#四、使用方法" class="headerlink" title="四、使用方法"></a>四、使用方法</h2><p>最简单的用法是指定输入 PDF 和压缩质量：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">python compress_pdf.py input.pdf 92</span><br></pre></td></tr></table></figure>
+
+<p>省略输出路径时，脚本会在原文件同目录生成 <code>input_compressed.pdf</code>。也可以显式指定输出文件：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">python compress_pdf.py input.pdf 85 output.pdf</span><br></pre></td></tr></table></figure>
+
+<p>质量参数的取值范围为 <code>1-100</code>。一般可以先从 <code>92</code> 或 <code>85</code> 开始尝试，再根据图片清晰度和文件大小调整：</p>
+<table>
+<thead>
+<tr>
+<th>质量参数</th>
+<th>适用场景</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>90-100</code></td>
+<td>扫描文档、医学图片、需要较高画质的材料</td>
+</tr>
+<tr>
+<td><code>75-89</code></td>
+<td>日常阅读、内部传阅、兼顾清晰度和体积</td>
+</tr>
+<tr>
+<td><code>1-74</code></td>
+<td>对体积要求较高、对图片质量要求较低的场景</td>
+</tr>
+</tbody></table>
+<h2 id="五、使用时的注意事项"><a href="#五、使用时的注意事项" class="headerlink" title="五、使用时的注意事项"></a>五、使用时的注意事项</h2><p>这个脚本主要压缩 PDF 内嵌图片。如果原文件主要由文字、矢量图形或已经高度压缩的图片组成，压缩后的体积变化可能不明显。</p>
+<p>另外，<code>quality</code> 控制的是图片重新编码质量，不是“压缩到原文件的百分之多少”。例如，设置为 <code>85</code> 并不意味着输出文件一定是原文件大小的 <code>85%</code>。</p>
+<p>脚本会校验文字内容和页面几何信息，但仍建议在处理重要文件后人工抽查，特别是包含医学影像、细小文字或二维码的 PDF。原始文件也应保留，便于在发现图片质量不合适时重新选择更高的质量参数。</p>
+<h2 id="六、总结"><a href="#六、总结" class="headerlink" title="六、总结"></a>六、总结</h2><p>相比“PDF 转图片再合成 PDF”的方式，直接重编码内嵌图片能够更好地保留文字、矢量内容和页面结构。这个脚本适合对包含扫描页、截图或照片的 PDF 做批量预处理；如果需要提交出版、打印或归档，建议根据最终用途选择合适的质量参数，并进行完整的视觉检查。</p>
+</div>
+
+  <footer class="wrap post__foot">
+    
+      <div class="post__tags">
+        <a class="pill pill--link" href="/tags/Python/">Python</a><a class="pill pill--link" href="/tags/PDF/">PDF</a><a class="pill pill--link" href="/tags/PyMuPDF/">PyMuPDF</a><a class="pill pill--link" href="/tags/%E6%96%87%E4%BB%B6%E5%8E%8B%E7%BC%A9/">文件压缩</a>
+      </div>
+    
+
+    
+
+    
+<section class="related" aria-label="相关文章">
+  <p class="related__label">相关文章</p>
+  <ul class="related__list">
+    
+      <li>
+        <a class="related__link" href="/2020/08/python-mail/">
+          <span class="related__title">利用 Python 发送邮件<span class="item__arrow" aria-hidden="true">→</span></span>
+          <time class="related__date" datetime="2020-08-22T16:01:08.000Z">2020-08-23</time>
+        </a>
+      </li>
+    
+      <li>
+        <a class="related__link" href="/2020/09/sublime-text-date-time/">
+          <span class="related__title">Sublime Text 3 插入当前日期及时间<span class="item__arrow" aria-hidden="true">→</span></span>
+          <time class="related__date" datetime="2020-09-08T16:09:04.000Z">2020-09-09</time>
+        </a>
+      </li>
+    
+      <li>
+        <a class="related__link" href="/2023/08/sklearn-paramenter-tune/">
+          <span class="related__title">Scikit-Learn 参数调优和评估<span class="item__arrow" aria-hidden="true">→</span></span>
+          <time class="related__date" datetime="2023-08-11T16:06:00.000Z">2023-08-12</time>
+        </a>
+      </li>
+    
+  </ul>
+</section>
+
+
+    
+      <nav class="nextprev" aria-label="归档">
+        <span></span>
+
+        
+          <a class="nextprev__card nextprev__card--r" href="/2026/08/github-pull-request/" rel="next">
+            <span class="nextprev__label">下一篇 <span aria-hidden="true">→</span></span>
+            <span class="nextprev__title">GitHub Pull Request 完整教程：从 Fork、提交 PR 到同步上游仓库</span>
+          </a>
+        
+      </nav>
+    
+  </footer>
+</article>
+
+
+
+
+
+</main>
+
+  
+<footer class="foot">
+  <div class="wrap foot__in">
+    <div class="foot__left">
+      
+      <p class="foot__copy">© 2026 辣椒小皇纸</p>
+    </div>
+
+    <div class="foot__right">
+      
+        <a class="foot__link" href="https://github.com/suhuang64" target="_blank" rel="noopener noreferrer">GitHub</a>
+      
+      
+    </div>
+  </div>
+</footer>
+
+
+  
+    <button class="totop" id="totop" type="button" aria-label="回到顶部">
+      <svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true" focusable="false">
+        <path d="M8 3.6l5.2 5.2-1.1 1.1L8.8 6.8V13h-1.6V6.8L3.9 9.9 2.8 8.8z" fill="currentColor"/>
+      </svg>
+    </button>
+  
+
+  
+    
+<div class="shortcuts" id="shortcuts" aria-hidden="true">
+  <p class="shortcuts__label">快捷键</p>
+  <ul class="shortcuts__list">
+    <li><kbd>Shift</kbd><span>+</span><kbd>T</kbd><span class="shortcuts__text">切换主题</span></li>
+    <li><kbd>Shift</kbd><span>+</span><kbd>H</kbd><span class="shortcuts__text">回到首页</span></li>
+    <li><kbd>Shift</kbd><span>+</span><kbd>R</kbd><span class="shortcuts__text">随机文章</span></li>
+  </ul>
+</div>
+
+  
+
+  
+    <script type="application/json" id="post-index">["/2019/09/linux-screen/","/2019/09/linux-dst-server/","/2019/09/ubuntu-sudo-no-password/","/2019/09/gitee-hexo/","/2019/11/windows-dst-server/","/2019/11/diy-dst-cmd/","/dst/","/2019/11/dst-nickname/","/2020/02/dst-wx78/","/2020/03/aria2-h5ai/","/2020/05/github-action-hexo/","/2020/08/python-mail/","/2020/08/openvpn","/2020/09/sublime-text-date-time/","/2023/08/sklearn-paramenter-tune/","/2020/08/frp/","/2020/07/r-mice/","/2023/08/sklearn-regression-algorithm/","/2026/08/compress-pdf-with-python/","/2024/09/mongorestore/","/2026/08/github-pull-request/"]</script>
+  
+
+  <script src="/js/main.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+
+  
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#fcfcfb" media="(prefers-color-scheme: light)" id="tc-light">
+  <meta name="theme-color" content="#171715" media="(prefers-color-scheme: dark)" id="tc-dark">
+
+  <script>
+    (function () {
+      var root = document.documentElement;
+      var key  = 'idyll-theme';
+
+      root.classList.add('js');
+
+      var saved = null;
+      try { saved = localStorage.getItem(key); } catch (err) {}
+
+      var tcLight = document.getElementById('tc-light');
+      var tcDark  = document.getElementById('tc-dark');
+      var colors  = { light: '#fcfcfb', dark: '#171715' };
+
+      function syncChrome(mode) {
+        if (tcLight && tcDark) {
+          var c = colors[mode] || null;
+          tcLight.content = c || '#fcfcfb';
+          tcDark.content  = c || '#171715';
+        }
+      }
+
+      if (saved === 'light' || saved === 'dark') {
+        root.setAttribute('data-theme', saved);
+        syncChrome(saved);
+      }
+
+      function wire() {
+        var btn = document.getElementById('theme');
+        if (!btn) return;
+
+        var state = document.getElementById('theme-state');
+
+        function paint(mode) {
+          if (mode) root.setAttribute('data-theme', mode);
+          else root.removeAttribute('data-theme');
+
+          if (state) state.textContent = btn.getAttribute('data-' + (mode || 'auto'));
+
+          syncChrome(mode);
+
+          try {
+            if (mode) localStorage.setItem(key, mode);
+            else localStorage.removeItem(key);
+          } catch (err) {}
+
+          
+          document.dispatchEvent(new CustomEvent('idyll:theme', { detail: mode || 'auto' }));
+        }
+
+        btn.addEventListener('click', function () {
+          var cur     = root.getAttribute('data-theme') || '';
+          var sysDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+          if (cur === '') paint(sysDark ? 'light' : 'dark');
+          else if (cur === 'light') paint('dark');
+          else paint('');
+        });
+
+        paint(root.getAttribute('data-theme') || '');
+      }
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', wire);
+      } else {
+        wire();
+      }
+    })();
+  </script>
+
+  <title>Windows 搭建饥荒服务器指南 · 辣椒手记</title>
+  <meta name="description" content="因为有些人不习惯Linux系统，这里我专门写一章Windows版的搭建教程 本指南的目的是在Windows上创建带洞穴的饥荒服务器，非多层世界本指南基于Windows Server 2016制作，理论上其他Windows也是兼容的">
+  <meta name="author" content="辣椒小皇纸">
+  
+
+  <meta name="description" content="因为有些人不习惯Linux系统，这里我专门写一章Windows版的搭建教程 本指南的目的是在Windows上创建带洞穴的饥荒服务器，非多层世界本指南基于Windows Server 2016制作，理论上其他Windows也是兼容的">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Windows 搭建饥荒服务器指南 · 辣椒手记">
+<meta property="og:url" content="https://peppernotes.top/2019/11/windows-dst-server/index.html">
+<meta property="og:site_name" content="辣椒手记">
+<meta property="og:description" content="因为有些人不习惯Linux系统，这里我专门写一章Windows版的搭建教程 本指南的目的是在Windows上创建带洞穴的饥荒服务器，非多层世界本指南基于Windows Server 2016制作，理论上其他Windows也是兼容的">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2019-11-01T10:47:00.000Z">
+<meta property="article:modified_time" content="2026-08-20T10:46:00.000Z">
+<meta property="article:author" content="辣椒小皇纸">
+<meta property="article:tag" content="SteamCMD">
+<meta property="article:tag" content="Windows">
+<meta property="article:tag" content="专用服务器">
+<meta property="article:tag" content="模组">
+<meta property="article:tag" content="洞穴世界">
+<meta property="article:tag" content="饥荒联机版">
+<meta name="twitter:card" content="summary">
+  
+  <link rel="canonical" href="https://peppernotes.top/2019/11/windows-dst-server/">
+  <link rel="icon" href="/images/favicon.svg" type="image/svg+xml">
+  
+
+  <link rel="stylesheet" href="/css/style.css">
+  
+
+<meta name="generator" content="Hexo 8.1.2"></head>
+
+<body data-idyll="copy anchor ext toc shortcut"
+      data-copy="复制"
+      data-copied="已复制"
+      data-copyfail="请按 Ctrl+C"
+      data-anchor="链接到这一节">
+
+  
+    <div class="progress" id="progress" aria-hidden="true"><i></i></div>
+  
+
+  <a class="skip" href="#main">跳到正文</a>
+
+  <header class="nav" id="nav">
+  <div class="wrap nav__in">
+    <a class="nav__brand" href="/">
+      <span class="nav__mark" aria-hidden="true"></span>
+      <span class="nav__name">辣椒手记</span>
+    </a>
+
+    <div class="nav__right">
+      <nav class="nav__links" aria-label="站点导航">
+        
+          <a class="nav__link"
+             href="/">首页</a>
+        
+          <a class="nav__link"
+             href="/archives/">归档</a>
+        
+          <a class="nav__link"
+             href="/categories/">分类</a>
+        
+          <a class="nav__link"
+             href="/tags/">标签</a>
+        
+          <a class="nav__link"
+             href="/series/">系列</a>
+        
+          <a class="nav__link"
+             href="/about/">关于</a>
+        
+      </nav>
+
+      
+        
+        <button class="theme" id="theme" type="button"
+                data-auto="跟随系统"
+                data-light="亮色"
+                data-dark="暗色">
+          <svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true" focusable="false">
+            <g class="theme__ico theme__ico--auto">
+              <circle cx="8" cy="8" r="5.6" fill="none" stroke="currentColor" stroke-width="1.4"/>
+              <path d="M8 2.4a5.6 5.6 0 0 0 0 11.2z" fill="currentColor"/>
+            </g>
+            <g class="theme__ico theme__ico--light"
+               fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round">
+              <circle cx="8" cy="8" r="3.1"/>
+              <path d="M8 1.3v1.3M8 13.4v1.3M14.7 8h-1.3M2.6 8H1.3M12.74 3.26l-.92.92M4.18 11.82l-.92.92M12.74 12.74l-.92-.92M4.18 4.18l-.92-.92"/>
+            </g>
+            <g class="theme__ico theme__ico--dark">
+              <path d="M14 8.53A6 6 0 1 1 7.47 2 4.67 4.67 0 0 0 14 8.53z"
+                    fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
+            </g>
+          </svg>
+          
+          <span class="sr-only" id="theme-state" aria-live="polite">跟随系统</span>
+        </button>
+      
+    </div>
+  </div>
+</header>
+
+
+  <main class="main" id="main">
+
+<article class="post">
+  <header class="wrap post__head">
+    
+      <p class="post__kicker">
+        <a href="/categories/%E6%B8%B8%E6%88%8F/">游戏</a><span class="sep">/</span><a href="/categories/%E6%B8%B8%E6%88%8F/%E9%A5%A5%E8%8D%92/">饥荒</a>
+      </p>
+    
+
+    <h1 class="post__title">Windows 搭建饥荒服务器指南</h1>
+
+    <div class="post__meta">
+      
+      <time datetime="2019-11-01T10:47:00.000Z"><span class="sr-only">发布于 </span>2019-11-01</time>
+      
+        <span class="dot" aria-hidden="true">·</span>
+        <span>1,784 字</span>
+      
+      
+        <span class="dot" aria-hidden="true">·</span>
+        <span>6 分钟</span>
+      
+      
+        <span class="dot" aria-hidden="true">·</span>
+        <span>更新于 2026-08-20</span>
+      
+    </div>
+  </header>
+
+  
+<nav class="toc" aria-label="目录">
+  <p class="toc__label">目录</p>
+  <ol class="toc__list">
+    
+      <li>
+        <a class="toc__link" href="#下载SteamCMD并安装服务器" data-toc-id="下载SteamCMD并安装服务器" title="下载SteamCMD并安装服务器">下载SteamCMD并安装服务器</a>
+        
+      </li>
+    
+      <li>
+        <a class="toc__link" href="#启动两个服务器（地面和洞穴）" data-toc-id="启动两个服务器（地面和洞穴）" title="启动两个服务器（地面和洞穴）">启动两个服务器（地面和洞穴）</a>
+        
+      </li>
+    
+      <li>
+        <a class="toc__link" href="#运行和停止两个服务器以创建存档文件Master（地面）和Caves（洞穴）" data-toc-id="运行和停止两个服务器以创建存档文件Master（地面）和Caves（洞穴）" title="运行和停止两个服务器以创建存档文件Master（地面）和Caves（洞穴）">运行和停止两个服务器以创建存档文件Master（地面）和Caves（洞穴）</a>
+        
+      </li>
+    
+      <li>
+        <a class="toc__link" href="#为服务器创建cluster-token-txt" data-toc-id="为服务器创建cluster-token-txt" title="为服务器创建cluster_token.txt">为服务器创建cluster_token.txt</a>
+        
+      </li>
+    
+      <li>
+        <a class="toc__link" href="#为两个服务器创建leveldataoverride-lua" data-toc-id="为两个服务器创建leveldataoverride-lua" title="为两个服务器创建leveldataoverride.lua">为两个服务器创建leveldataoverride.lua</a>
+        
+          <ol class="toc__list toc__list--sub">
+            
+              <li><a class="toc__link toc__link--sub" href="#获取leveldataoverride-lua文件配置" data-toc-id="获取leveldataoverride-lua文件配置" title="获取leveldataoverride.lua文件配置">获取leveldataoverride.lua文件配置</a></li>
+            
+              <li><a class="toc__link toc__link--sub" href="#创建Linux上的leveldataoverride-lua" data-toc-id="创建Linux上的leveldataoverride-lua" title="创建Linux上的leveldataoverride.lua">创建Linux上的leveldataoverride.lua</a></li>
+            
+          </ol>
+        
+      </li>
+    
+      <li>
+        <a class="toc__link" href="#创建并配置cluster-ini" data-toc-id="创建并配置cluster-ini" title="创建并配置cluster.ini">创建并配置cluster.ini</a>
+        
+      </li>
+    
+      <li>
+        <a class="toc__link" href="#为两个服务器创建server-ini" data-toc-id="为两个服务器创建server-ini" title="为两个服务器创建server.ini">为两个服务器创建server.ini</a>
+        
+      </li>
+    
+      <li>
+        <a class="toc__link" href="#为两个服务器添加mod" data-toc-id="为两个服务器添加mod" title="为两个服务器添加mod">为两个服务器添加mod</a>
+        
+          <ol class="toc__list toc__list--sub">
+            
+              <li><a class="toc__link toc__link--sub" href="#获取modoverrides-lua文件配置" data-toc-id="获取modoverrides-lua文件配置" title="获取modoverrides.lua文件配置">获取modoverrides.lua文件配置</a></li>
+            
+              <li><a class="toc__link toc__link--sub" href="#创建Linux上的modoverrides-lua" data-toc-id="创建Linux上的modoverrides-lua" title="创建Linux上的modoverrides.lua">创建Linux上的modoverrides.lua</a></li>
+            
+              <li><a class="toc__link toc__link--sub" href="#修改dedicated-server-mods-setup-lua以让服务器下载相应mod" data-toc-id="修改dedicated-server-mods-setup-lua以让服务器下载相应mod" title="修改dedicated_server_mods_setup.lua以让服务器下载相应mod">修改dedicated_server_mods_setup.lua以让服务器下载相应mod</a></li>
+            
+          </ol>
+        
+      </li>
+    
+      <li>
+        <a class="toc__link" href="#测试两个服务器" data-toc-id="测试两个服务器" title="测试两个服务器">测试两个服务器</a>
+        
+      </li>
+    
+      <li>
+        <a class="toc__link" href="#其他" data-toc-id="其他" title="其他">其他</a>
+        
+          <ol class="toc__list toc__list--sub">
+            
+              <li><a class="toc__link toc__link--sub" href="#添加管理员" data-toc-id="添加管理员" title="添加管理员">添加管理员</a></li>
+            
+              <li><a class="toc__link toc__link--sub" href="#添加黑名单" data-toc-id="添加黑名单" title="添加黑名单">添加黑名单</a></li>
+            
+          </ol>
+        
+      </li>
+    
+  </ol>
+</nav>
+
+
+  <div class="wrap prose" id="content"><blockquote>
+<p>因为有些人不习惯Linux系统，这里我专门写一章Windows版的搭建教程</p>
+</blockquote>
+<blockquote>
+<p>本指南的目的是在Windows上创建带<strong>洞穴</strong>的饥荒服务器，非<strong>多层世界</strong><br>本指南基于<strong>Windows Server 2016</strong>制作，理论上其他Windows也是兼容的</p>
+</blockquote>
+<span id="more"></span> 
+
+<h2 id="下载SteamCMD并安装服务器"><a href="#下载SteamCMD并安装服务器" class="headerlink" title="下载SteamCMD并安装服务器"></a>下载SteamCMD并安装服务器</h2><p>为SteamCMD创建一个文件夹</p>
+<p>例如：</p>
+<p><code>C:\steamcmd</code></p>
+<p>下载适用于Windows的<a target="_blank" rel="noopener" href="https://steamcdn-a.akamaihd.net/client/installer/steamcmd.zip">SteamCMD</a></p>
+<p>将zip的内容提取到该文件夹​​中</p>
+<ul>
+<li>进入文件夹steamcmd</li>
+<li>启动软件steamcmd</li>
+<li>等待有关steamcmd的更新结束</li>
+<li>输入<code>login anonymous</code></li>
+<li>输入<code>force_install_dir C:\DontStarveTogetherServer</code><blockquote>
+<p>将在<code>C:\DontStarveTogetherServer</code>安装饥荒服务器</p>
+</blockquote>
+</li>
+<li>输入<code>app_update 343050 validate</code></li>
+<li>安装完成后输入<code>安装完成后</code>退出<blockquote>
+<p>以后每次更新游戏只要重复上述代码即可</p>
+</blockquote>
+</li>
+</ul>
+<h2 id="启动两个服务器（地面和洞穴）"><a href="#启动两个服务器（地面和洞穴）" class="headerlink" title="启动两个服务器（地面和洞穴）"></a>启动两个服务器（地面和洞穴）</h2><p>您需要创建两个bat脚本（<code>master.sh</code>和<code>caves.sh</code>）来分别运行两个世界</p>
+<p>进入目录<code>C:\DontStarveTogetherServer\bin</code></p>
+<p>我们先创建<code>master.bat</code>，内容为</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">dontstarve_dedicated_server_nullrenderer.exe -persistent_storage_root C:\klei -conf_dir DoNotStarveTogether -cluster Cluster_1 -shard Master</span><br></pre></td></tr></table></figure>
+
+<p>再创建<code>caves.bat</code>，内容为</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">dontstarve_dedicated_server_nullrenderer.exe -persistent_storage_root C:\klei -conf_dir DoNotStarveTogether -cluster Cluster_1 -shard Caves</span><br></pre></td></tr></table></figure>
+
+<p>再创建<code>start.bat</code>，内容为</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">start master.bat</span><br><span class="line">start caves.bat</span><br></pre></td></tr></table></figure>
+
+<h2 id="运行和停止两个服务器以创建存档文件Master（地面）和Caves（洞穴）"><a href="#运行和停止两个服务器以创建存档文件Master（地面）和Caves（洞穴）" class="headerlink" title="运行和停止两个服务器以创建存档文件Master（地面）和Caves（洞穴）"></a>运行和停止两个服务器<br/>以创建存档文件Master（地面）和Caves（洞穴）</h2><h4 id="地面的存档"><a href="#地面的存档" class="headerlink" title="地面的存档"></a>地面的存档</h4><p> 双击运行<code>start.bat</code>，这是会弹出两个命令行窗口，切换到名字为Master的窗口</p>
+<p>当你在屏幕上看到<code>Your Server Will Not Start</code>字眼时，关闭两个窗口</p>
+<h2 id="为服务器创建cluster-token-txt"><a href="#为服务器创建cluster-token-txt" class="headerlink" title="为服务器创建cluster_token.txt"></a>为服务器创建cluster_token.txt</h2><p>在你PC上打开饥荒联机版游戏 -&gt; 点击<code>开始游戏</code> -&gt; 点击<code>账户信息</code> -&gt; 点击最上面一排的<code>游戏</code> </p>
+<p>-&gt; 点击<code>Don&#39;t Starve Together Servers</code> -&gt; 拉到最下面，随便输一个名字，点击<code>添加新服务器</code></p>
+<p>即可获取一串以<code>pds-g</code>开头的字符串，复制</p>
+<p>在<code>C:\klei\DoNotStarveTogether\Cluster_1\</code>下创建<code>cluster_token.txt</code>，内容为上面复制的字符串</p>
+<h2 id="为两个服务器创建leveldataoverride-lua"><a href="#为两个服务器创建leveldataoverride-lua" class="headerlink" title="为两个服务器创建leveldataoverride.lua"></a>为两个服务器创建leveldataoverride.lua</h2><p>leveldataoverride.lua代表生成世界的设置，你可以调整季节、怪物或生物群系以及更多</p>
+<h3 id="获取leveldataoverride-lua文件配置"><a href="#获取leveldataoverride-lua文件配置" class="headerlink" title="获取leveldataoverride.lua文件配置"></a>获取leveldataoverride.lua文件配置</h3><ol>
+<li>打开Windows PC饥荒联机版游戏</li>
+<li>按照您的喜好在第一个存档位置创建您的世界（需添加洞穴）</li>
+<li>创建成功世界后退出游戏</li>
+<li>打开您电脑中的该路径<code>C:\Users\XXX\Documents\Klei\DoNotStarveTogether</code><blockquote>
+<p><code>XXX</code>为您电脑的用户名</p>
+</blockquote>
+</li>
+<li>打开该路径下的名字为数字的文件夹</li>
+<li>打开<code>Cluster_1</code>，里面会有<code>Master</code>和<code>Caves</code>文件夹，这两个文件夹里分别有一个<code>leveldataoverride.lua</code>文件</li>
+</ol>
+<h3 id="创建Linux上的leveldataoverride-lua"><a href="#创建Linux上的leveldataoverride-lua" class="headerlink" title="创建Linux上的leveldataoverride.lua"></a>创建Linux上的leveldataoverride.lua</h3><h4 id="地面的leveldataoverride-lua"><a href="#地面的leveldataoverride-lua" class="headerlink" title="地面的leveldataoverride.lua"></a>地面的leveldataoverride.lua</h4><p>把上面获取到的<code>Master</code>里的<code>leveldataoverride.lua</code>复制到<code>C:\klei\DoNotStarveTogether\Cluster_1\Master\</code>，如果提示文件存在就选择覆盖替换</p>
+<h4 id="洞穴的leveldataoverride-lua"><a href="#洞穴的leveldataoverride-lua" class="headerlink" title="洞穴的leveldataoverride.lua"></a>洞穴的leveldataoverride.lua</h4><p>同样，把上面获取到的<code>Caves</code>里的<code>leveldataoverride.lua</code>复制到<code>C:\klei\DoNotStarveTogether\Cluster_1\Caves\</code>，如果提示文件存在就选择覆盖替换</p>
+<h2 id="创建并配置cluster-ini"><a href="#创建并配置cluster-ini" class="headerlink" title="创建并配置cluster.ini"></a>创建并配置cluster.ini</h2><p>编辑<code>C:\klei\DoNotStarveTogether\Cluster_1\</code>下的<code>cluster.ini</code></p>
+<p>内容为</p>
+<figure class="highlight ini"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="section">[GAMEPLAY]</span></span><br><span class="line"><span class="attr">game_mode</span> = endless</span><br><span class="line"><span class="attr">max_players</span> = <span class="number">8</span></span><br><span class="line"><span class="attr">pvp</span> = <span class="literal">false</span></span><br><span class="line"><span class="attr">pause_when_empty</span> = <span class="literal">true</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="section">[NETWORK]</span></span><br><span class="line"><span class="attr">lan_only_cluster</span> = <span class="literal">false</span></span><br><span class="line"><span class="attr">cluster_intention</span> = cooperative</span><br><span class="line"><span class="attr">cluster_password</span> = <span class="number">123456</span></span><br><span class="line"><span class="attr">cluster_name</span> = 服务器测试</span><br><span class="line"><span class="attr">cluster_description</span> = 一起嗨起来</span><br><span class="line"><span class="attr">offline_cluster</span> = <span class="literal">false</span></span><br><span class="line"><span class="attr">cluster_language</span> = zh</span><br><span class="line"></span><br><span class="line"><span class="section">[STEAM]</span></span><br><span class="line"><span class="attr">steam_group_id</span> = <span class="number">35243410</span></span><br><span class="line"><span class="attr">steam_group_admins</span> = <span class="literal">false</span></span><br><span class="line"><span class="attr">steam_group_only</span> = <span class="literal">false</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="section">[MISC]</span></span><br><span class="line"><span class="attr">max_snapshots</span> = <span class="number">20</span></span><br><span class="line"><span class="attr">console_enabled</span> = <span class="literal">true</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="section">[SHARD]</span></span><br><span class="line"><span class="attr">shard_enabled</span> = <span class="literal">true</span></span><br><span class="line"><span class="attr">bind_ip</span>=<span class="number">0.0</span>.<span class="number">0.0</span></span><br><span class="line"><span class="attr">master_ip</span> = <span class="number">127.0</span>.<span class="number">0.1</span></span><br><span class="line"><span class="attr">master_port</span> = <span class="number">10888</span></span><br><span class="line"><span class="attr">cluster_key</span> = defaultPass</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>注：<br>game_mode 游戏模式，选项为<code>survival</code> <code>endless</code> <code>wilderness</code>，分别对应<code>生存</code> <code>无尽</code> <code>荒野</code>模式<br>max_players 最大人数<br>pvp 开启PVP模式，选项为<code>true</code> <code>false</code><br>cluster_intention 游戏风格，选项为<code>cooperative</code> <code>competitive</code> <code>social</code> <code>madness</code><br>cluster_password 服务器密码<br>cluster_name 服务器名<br>cluster_description 服务器介绍<br>steam_group_id steam群组的id，如果不添加群组请留空<br>steam_group_admins 群组的管理也变成服务器的管理员，选项为<code>true</code> <code>false</code><br>steam_group_only 只有群组成员才能加入，选项为<code>true</code> <code>false</code><br>max_snapshots 最大存档天数，游戏默认只保存5天的存档</p>
+</blockquote>
+<h2 id="为两个服务器创建server-ini"><a href="#为两个服务器创建server-ini" class="headerlink" title="为两个服务器创建server.ini"></a>为两个服务器创建server.ini</h2><h4 id="地面的server-ini"><a href="#地面的server-ini" class="headerlink" title="地面的server.ini"></a>地面的server.ini</h4><p>编辑<code>C:\klei\DoNotStarveTogether\Cluster_1\Master</code>下的<code>server.ini</code></p>
+<p>内容为</p>
+<figure class="highlight ini"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="section">[NETWORK]</span></span><br><span class="line"><span class="attr">server_port</span> = <span class="number">11999</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="section">[SHARD]</span></span><br><span class="line"><span class="attr">is_master</span> = <span class="literal">true</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="section">[ACCOUNT]</span></span><br><span class="line"><span class="attr">encode_user_path</span> = <span class="literal">true</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="section">[STEAM]</span></span><br><span class="line"><span class="attr">master_server_port</span> = <span class="number">28018</span></span><br><span class="line"><span class="attr">authentication_port</span> = <span class="number">9768</span></span><br></pre></td></tr></table></figure>
+
+<h4 id="洞穴的server-ini"><a href="#洞穴的server-ini" class="headerlink" title="洞穴的server.ini"></a>洞穴的server.ini</h4><p>编辑<code>C:\klei\DoNotStarveTogether\Cluster_1\Caves</code>下的<code>server.ini</code></p>
+<p>内容为</p>
+<figure class="highlight ini"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="section">[NETWORK]</span></span><br><span class="line"><span class="attr">server_port</span> = <span class="number">12000</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="section">[SHARD]</span></span><br><span class="line"><span class="attr">is_master</span> = <span class="literal">false</span></span><br><span class="line"><span class="attr">name</span> = Caves</span><br><span class="line"><span class="attr">id</span> = <span class="number">11</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="section">[ACCOUNT]</span></span><br><span class="line"><span class="attr">encode_user_path</span> = <span class="literal">true</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="section">[STEAM]</span></span><br><span class="line"><span class="attr">master_server_port</span> = <span class="number">28019</span></span><br><span class="line"><span class="attr">authentication_port</span> = <span class="number">9769</span></span><br></pre></td></tr></table></figure>
+
+<h2 id="为两个服务器添加mod"><a href="#为两个服务器添加mod" class="headerlink" title="为两个服务器添加mod"></a>为两个服务器添加mod</h2><p>还记得上文的为服务器创建<code>leveldataoverride.lua</code>的方法吧？</p>
+<p>为服务器添加mod的方法类似</p>
+<h3 id="获取modoverrides-lua文件配置"><a href="#获取modoverrides-lua文件配置" class="headerlink" title="获取modoverrides.lua文件配置"></a>获取modoverrides.lua文件配置</h3><ol>
+<li>打开Windows PC饥荒联机版游戏</li>
+<li>按照您的喜好在第一个存档位置创建您的世界（需添加洞穴），这是需添加mod，提前在创意工坊订阅好</li>
+<li>创建成功世界后退出游戏</li>
+<li>打开您电脑中的该路径<code>C:\Users\XXX\Documents\Klei\DoNotStarveTogether</code><blockquote>
+<p><code>XXX</code>为您电脑的用户名</p>
+</blockquote>
+</li>
+<li>打开该路径下的名字为数字的文件夹</li>
+<li>打开<code>Cluster_1</code>，里面会有<code>Master</code>和<code>Caves</code>文件夹，这两个文件夹里分别有一个<code>modoverrides.lua</code>文件</li>
+</ol>
+<h3 id="创建Linux上的modoverrides-lua"><a href="#创建Linux上的modoverrides-lua" class="headerlink" title="创建Linux上的modoverrides.lua"></a>创建Linux上的modoverrides.lua</h3><h4 id="地面的modoverrides-lua"><a href="#地面的modoverrides-lua" class="headerlink" title="地面的modoverrides.lua"></a>地面的modoverrides.lua</h4><p>把上面获取到的<code>Master</code>里的<code>modoverrides.lua</code>复制到<code>C:\klei\DoNotStarveTogether\Cluster_1\Master\</code>，如果提示文件存在就选择覆盖替换</p>
+<h4 id="洞穴的modoverrides-lua"><a href="#洞穴的modoverrides-lua" class="headerlink" title="洞穴的modoverrides.lua"></a>洞穴的modoverrides.lua</h4><p>把上面获取到的<code>Caves</code>里的<code>modoverrides.lua</code>复制到<code>C:\klei\DoNotStarveTogether\Cluster_1\Caves\</code>，如果提示文件存在就选择覆盖替换</p>
+<h3 id="修改dedicated-server-mods-setup-lua以让服务器下载相应mod"><a href="#修改dedicated-server-mods-setup-lua以让服务器下载相应mod" class="headerlink" title="修改dedicated_server_mods_setup.lua以让服务器下载相应mod"></a>修改dedicated_server_mods_setup.lua以让服务器下载相应mod</h3><p>编辑<code>C:\DontStarveTogetherServer\mods</code>下的<code>dedicated_server_mods_setup.lua</code></p>
+<p>在里面另起一行，输入你要添加的mod，格式如下：</p>
+<figure class="highlight lua"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">ServerModSetup(<span class="string">&quot;375850593&quot;</span>)</span><br><span class="line">ServerModSetup(<span class="string">&quot;1438233888&quot;</span>)</span><br><span class="line">ServerModSetup(<span class="string">&quot;850494968&quot;</span>)</span><br><span class="line">ServerModSetup(<span class="string">&quot;666155465&quot;</span>)</span><br><span class="line">ServerModSetup(<span class="string">&quot;1185229307&quot;</span>)</span><br><span class="line">ServerModSetup(<span class="string">&quot;1595631294&quot;</span>)</span><br><span class="line">ServerModSetup(<span class="string">&quot;462434129&quot;</span>)</span><br></pre></td></tr></table></figure>
+
+<p>每个mod一行，双引号中间的数字为对应mod的ID</p>
+<p>获取mod的ID的方法：</p>
+<h4 id="方法一"><a href="#方法一" class="headerlink" title="方法一"></a>方法一</h4><p>打开之前获取的<code>modoverrides.lua</code>，里面的格式为</p>
+<figure class="highlight lua"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[<span class="string">&quot;workshop-375850593&quot;</span>]=&#123; configuration_options=&#123;  &#125;, enabled=<span class="literal">true</span> &#125;,</span><br></pre></td></tr></table></figure>
+
+<p>其中workshop后面的数字即为mod的ID</p>
+<h4 id="方法二"><a href="#方法二" class="headerlink" title="方法二"></a>方法二</h4><p>打mod的创意工坊页面，如<code>https://steamcommunity.com/sharedfiles/filedetails/?id=501385076</code></p>
+<p>链接中<code>id=</code>后面的就是mod的ID</p>
+<h2 id="测试两个服务器"><a href="#测试两个服务器" class="headerlink" title="测试两个服务器"></a>测试两个服务器</h2><p>运行<code>start.bat</code>，服务器就启动了<br>分别查看两个命令行窗口</p>
+<p>如果看到<code>Sim paused</code>，说明服务器开启成功，打开游戏看看能不能连接上吧</p>
+<p>至此服务器就创建完毕了</p>
+<h2 id="其他"><a href="#其他" class="headerlink" title="其他"></a>其他</h2><h3 id="添加管理员"><a href="#添加管理员" class="headerlink" title="添加管理员"></a>添加管理员</h3><p>如果您用的是自己的cluster_token创建服务器，那么默认您就是游戏管理员</p>
+<p>如果您想添加其他的玩家为管理员，在<code>C:\klei\DoNotStarveTogether\Cluster_1</code>下创建<code>adminlist.txt</code></p>
+<p>在里面添加对应玩家的ID，一行一个玩家</p>
+<p>重启服务器后生效</p>
+<h3 id="添加黑名单"><a href="#添加黑名单" class="headerlink" title="添加黑名单"></a>添加黑名单</h3><p>同理，在<code>C:\klei\DoNotStarveTogether\Cluster_1</code>下创建<code>blocklist.txt</code></p>
+<p>在里面添加对应玩家的ID，一行一个玩家</p>
+<p>重启服务器后生效</p>
+<blockquote>
+<p>玩家ID可在服务器日志中查看，格式为<code>KU_</code>开头</p>
+</blockquote>
+<p><strong>在服务器创建的过程中如果遇到问题，欢迎在下方留言</strong></p>
+</div>
+
+  <footer class="wrap post__foot">
+    
+      <div class="post__tags">
+        <a class="pill pill--link" href="/tags/%E9%A5%A5%E8%8D%92%E8%81%94%E6%9C%BA%E7%89%88/">饥荒联机版</a><a class="pill pill--link" href="/tags/SteamCMD/">SteamCMD</a><a class="pill pill--link" href="/tags/%E4%B8%93%E7%94%A8%E6%9C%8D%E5%8A%A1%E5%99%A8/">专用服务器</a><a class="pill pill--link" href="/tags/%E6%B4%9E%E7%A9%B4%E4%B8%96%E7%95%8C/">洞穴世界</a><a class="pill pill--link" href="/tags/%E6%A8%A1%E7%BB%84/">模组</a><a class="pill pill--link" href="/tags/Windows/">Windows</a>
+      </div>
+    
+
+    
+
+    
+<section class="related" aria-label="相关文章">
+  <p class="related__label">相关文章</p>
+  <ul class="related__list">
+    
+      <li>
+        <a class="related__link" href="/2019/09/linux-dst-server/">
+          <span class="related__title">Linux 搭建饥荒服务器指南<span class="item__arrow" aria-hidden="true">→</span></span>
+          <time class="related__date" datetime="2019-09-19T15:16:00.000Z">2019-09-19</time>
+        </a>
+      </li>
+    
+      <li>
+        <a class="related__link" href="/2019/11/diy-dst-cmd/">
+          <span class="related__title">自定义饥荒服务器后台命令<span class="item__arrow" aria-hidden="true">→</span></span>
+          <time class="related__date" datetime="2019-11-17T16:13:00.000Z">2019-11-18</time>
+        </a>
+      </li>
+    
+      <li>
+        <a class="related__link" href="/2020/02/dst-wx78/">
+          <span class="related__title">饥荒联机版 WX-78 雷击超载时间计算公式<span class="item__arrow" aria-hidden="true">→</span></span>
+          <time class="related__date" datetime="2020-02-28T10:49:00.000Z">2020-02-28</time>
+        </a>
+      </li>
+    
+  </ul>
+</section>
+
+
+    
+      <nav class="nextprev" aria-label="归档">
+        
+          <a class="nextprev__card" href="/2019/11/dst-nickname/" rel="prev">
+            <span class="nextprev__label"><span aria-hidden="true">←</span> 上一篇</span>
+            <span class="nextprev__title">让您的饥荒昵称看起来更精致</span>
+          </a>
+        
+
+        
+          <a class="nextprev__card nextprev__card--r" href="/2019/09/ubuntu-sudo-no-password/" rel="next">
+            <span class="nextprev__label">下一篇 <span aria-hidden="true">→</span></span>
+            <span class="nextprev__title">Ubuntu 在运行 sudo 命令时免密码</span>
+          </a>
+        
+      </nav>
+    
+  </footer>
+</article>
+
+
+
+
+
+</main>
+
+  
+<footer class="foot">
+  <div class="wrap foot__in">
+    <div class="foot__left">
+      
+      <p class="foot__copy">© 2026 辣椒小皇纸</p>
+    </div>
+
+    <div class="foot__right">
+      
+        <a class="foot__link" href="https://github.com/suhuang64" target="_blank" rel="noopener noreferrer">GitHub</a>
+      
+      
+    </div>
+  </div>
+</footer>
+
+
+  
+    <button class="totop" id="totop" type="button" aria-label="回到顶部">
+      <svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true" focusable="false">
+        <path d="M8 3.6l5.2 5.2-1.1 1.1L8.8 6.8V13h-1.6V6.8L3.9 9.9 2.8 8.8z" fill="currentColor"/>
+      </svg>
+    </button>
+  
+
+  
+    
+<div class="shortcuts" id="shortcuts" aria-hidden="true">
+  <p class="shortcuts__label">快捷键</p>
+  <ul class="shortcuts__list">
+    <li><kbd>Shift</kbd><span>+</span><kbd>T</kbd><span class="shortcuts__text">切换主题</span></li>
+    <li><kbd>Shift</kbd><span>+</span><kbd>H</kbd><span class="shortcuts__text">回到首页</span></li>
+    <li><kbd>Shift</kbd><span>+</span><kbd>R</kbd><span class="shortcuts__text">随机文章</span></li>
+  </ul>
+</div>
+
+  
+
+  
+    <script type="application/json" id="post-index">["/2019/09/linux-screen/","/2019/09/linux-dst-server/","/2019/09/ubuntu-sudo-no-password/","/2019/09/gitee-hexo/","/2019/11/windows-dst-server/","/2019/11/diy-dst-cmd/","/dst/","/2019/11/dst-nickname/","/2020/02/dst-wx78/","/2020/03/aria2-h5ai/","/2020/05/github-action-hexo/","/2020/08/python-mail/","/2020/08/openvpn","/2020/09/sublime-text-date-time/","/2023/08/sklearn-paramenter-tune/","/2020/08/frp/","/2020/07/r-mice/","/2023/08/sklearn-regression-algorithm/","/2026/08/compress-pdf-with-python/","/2024/09/mongorestore/","/2026/08/github-pull-request/"]</script>
+  
+
+  <script src="/js/main.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+
+  
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#fcfcfb" media="(prefers-color-scheme: light)" id="tc-light">
+  <meta name="theme-color" content="#171715" media="(prefers-color-scheme: dark)" id="tc-dark">
+
+  <script>
+    (function () {
+      var root = document.documentElement;
+      var key  = 'idyll-theme';
+
+      root.classList.add('js');
+
+      var saved = null;
+      try { saved = localStorage.getItem(key); } catch (err) {}
+
+      var tcLight = document.getElementById('tc-light');
+      var tcDark  = document.getElementById('tc-dark');
+      var colors  = { light: '#fcfcfb', dark: '#171715' };
+
+      function syncChrome(mode) {
+        if (tcLight && tcDark) {
+          var c = colors[mode] || null;
+          tcLight.content = c || '#fcfcfb';
+          tcDark.content  = c || '#171715';
+        }
+      }
+
+      if (saved === 'light' || saved === 'dark') {
+        root.setAttribute('data-theme', saved);
+        syncChrome(saved);
+      }
+
+      function wire() {
+        var btn = document.getElementById('theme');
+        if (!btn) return;
+
+        var state = document.getElementById('theme-state');
+
+        function paint(mode) {
+          if (mode) root.setAttribute('data-theme', mode);
+          else root.removeAttribute('data-theme');
+
+          if (state) state.textContent = btn.getAttribute('data-' + (mode || 'auto'));
+
+          syncChrome(mode);
+
+          try {
+            if (mode) localStorage.setItem(key, mode);
+            else localStorage.removeItem(key);
+          } catch (err) {}
+
+          
+          document.dispatchEvent(new CustomEvent('idyll:theme', { detail: mode || 'auto' }));
+        }
+
+        btn.addEventListener('click', function () {
+          var cur     = root.getAttribute('data-theme') || '';
+          var sysDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+          if (cur === '') paint(sysDark ? 'light' : 'dark');
+          else if (cur === 'light') paint('dark');
+          else paint('');
+        });
+
+        paint(root.getAttribute('data-theme') || '');
+      }
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', wire);
+      } else {
+        wire();
+      }
+    })();
+  </script>
+
+  <title>归档 · 辣椒手记</title>
+  
+  <meta name="author" content="辣椒小皇纸">
+  
+
+  <meta property="og:type" content="website">
+<meta property="og:title" content="归档 · 辣椒手记">
+<meta property="og:url" content="https://peppernotes.top/archives/index.html">
+<meta property="og:site_name" content="辣椒手记">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:author" content="辣椒小皇纸">
+<meta name="twitter:card" content="summary">
+  
+  <link rel="canonical" href="https://peppernotes.top/archives/index.html">
+  <link rel="icon" href="/images/favicon.svg" type="image/svg+xml">
+  
+
+  <link rel="stylesheet" href="/css/style.css">
+  
+
+<meta name="generator" content="Hexo 8.1.2"></head>
+
+<body data-idyll="copy anchor ext toc shortcut"
+      data-copy="复制"
+      data-copied="已复制"
+      data-copyfail="请按 Ctrl+C"
+      data-anchor="链接到这一节">
+
+  
+
+  <a class="skip" href="#main">跳到正文</a>
+
+  <header class="nav" id="nav">
+  <div class="wrap nav__in">
+    <a class="nav__brand" href="/">
+      <span class="nav__mark" aria-hidden="true"></span>
+      <span class="nav__name">辣椒手记</span>
+    </a>
+
+    <div class="nav__right">
+      <nav class="nav__links" aria-label="站点导航">
+        
+          <a class="nav__link"
+             href="/">首页</a>
+        
+          <a class="nav__link is-on"
+             href="/archives/" aria-current=&#34;page&#34;>归档</a>
+        
+          <a class="nav__link"
+             href="/categories/">分类</a>
+        
+          <a class="nav__link"
+             href="/tags/">标签</a>
+        
+          <a class="nav__link"
+             href="/series/">系列</a>
+        
+          <a class="nav__link"
+             href="/about/">关于</a>
+        
+      </nav>
+
+      
+        
+        <button class="theme" id="theme" type="button"
+                data-auto="跟随系统"
+                data-light="亮色"
+                data-dark="暗色">
+          <svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true" focusable="false">
+            <g class="theme__ico theme__ico--auto">
+              <circle cx="8" cy="8" r="5.6" fill="none" stroke="currentColor" stroke-width="1.4"/>
+              <path d="M8 2.4a5.6 5.6 0 0 0 0 11.2z" fill="currentColor"/>
+            </g>
+            <g class="theme__ico theme__ico--light"
+               fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round">
+              <circle cx="8" cy="8" r="3.1"/>
+              <path d="M8 1.3v1.3M8 13.4v1.3M14.7 8h-1.3M2.6 8H1.3M12.74 3.26l-.92.92M4.18 11.82l-.92.92M12.74 12.74l-.92-.92M4.18 4.18l-.92-.92"/>
+            </g>
+            <g class="theme__ico theme__ico--dark">
+              <path d="M14 8.53A6 6 0 1 1 7.47 2 4.67 4.67 0 0 0 14 8.53z"
+                    fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
+            </g>
+          </svg>
+          
+          <span class="sr-only" id="theme-state" aria-live="polite">跟随系统</span>
+        </button>
+      
+    </div>
+  </div>
+</header>
+
+
+  <main class="main" id="main">
+
+<section class="wrap page-head">
+  
+  <h1 class="page-head__title">归档</h1>
+  <p class="page-head__meta">21 篇</p>
+</section>
+
+<section class="wrap">
+  
+
+
+
+  <div class="list">
+    
+      <div class="year">
+        <span class="year__n">2026</span>
+        <span class="year__rule"></span>
+      </div>
+    
+
+      <a class="item" href="/2026/08/compress-pdf-with-python/">
+        <time class="item__date" datetime="2026-08-21T04:00:00.000Z">08-21</time>
+
+        <div class="item__body">
+          <h2 class="item__title">使用 Python 质量压缩 PDF<span class="item__arrow" aria-hidden="true">→</span></h2>
+
+          
+          <p class="item__desc">PDF 文件经常因为嵌入了大量高清图片而体积过大。直接把整页转换成图片再重新生成 PDF，虽然可以显著减小体积，却会让文字和矢量图形失去原有的清晰度，也可能破坏页面尺寸、链接和文档结构。 本文提供一个基于 PyMuPDF…</p>
+
+          
+            <div class="item__tags">
+              <span class="pill">Python</span><span class="pill">PDF</span><span class="pill">PyMuPDF</span><span class="pill">文件压缩</span>
+            </div>
+          
+        </div>
+      </a>
+    
+
+      <a class="item" href="/2026/08/github-pull-request/">
+        <time class="item__date" datetime="2026-08-20T09:02:00.000Z">08-20</time>
+
+        <div class="item__body">
+          <h2 class="item__title">GitHub Pull Request 完整教程：从 Fork、提交 PR 到同步上游仓库<span class="item__arrow" aria-hidden="true">→</span></h2>
+
+          
+          <p class="item__desc">在参与 GitHub 开源项目时，一个非常常见的工作流是： Fork 别人的项目 → 修改代码 → 提交 Pull Request → 作者 Review → Merge 或 Reject → 继续同步原项目</p>
+
+          
+            <div class="item__tags">
+              <span class="pill">Git</span><span class="pill">GitHub</span><span class="pill">Pull Request</span><span class="pill">Fork</span><span class="pill">开源协作</span><span class="pill">版本控制</span>
+            </div>
+          
+        </div>
+      </a>
+    
+      <div class="year">
+        <span class="year__n">2024</span>
+        <span class="year__rule"></span>
+      </div>
+    
+
+      <a class="item" href="/2024/09/mongorestore/">
+        <time class="item__date" datetime="2024-09-13T01:18:00.000Z">09-13</time>
+
+        <div class="item__body">
+          <h2 class="item__title">使用 mongorestore 恢复 MongoDB 集合<span class="item__arrow" aria-hidden="true">→</span></h2>
+
+          
+          <p class="item__desc">在使用 MongoDB 进行数据备份和恢复的过程中，mongorestore 是一个非常实用的工具，它允许我们从备份中恢复数据库或特定的集合。有时，我们在恢复集合之前，可能需要先清空目标集合，以确保不会有旧数据的干扰。本…</p>
+
+          
+            <div class="item__tags">
+              <span class="pill">MongoDB</span><span class="pill">mongorestore</span><span class="pill">mongodump</span><span class="pill">数据库备份</span><span class="pill">数据恢复</span><span class="pill">集合</span>
+            </div>
+          
+        </div>
+      </a>
+    
+      <div class="year">
+        <span class="year__n">2023</span>
+        <span class="year__rule"></span>
+      </div>
+    
+
+      <a class="item" href="/2023/08/sklearn-paramenter-tune/">
+        <time class="item__date" datetime="2023-08-11T16:06:00.000Z">08-12</time>
+
+        <div class="item__body">
+          <h2 class="item__title">Scikit-Learn 参数调优和评估<span class="item__arrow" aria-hidden="true">→</span></h2>
+
+          
+          <p class="item__desc">在机器学习的实践中，选择一个合适的模型只是冰山一角。即使选择了正确的模型，如果不对其进行适当的参数调优，那么模型的性能可能会大打折扣。参数调优对于模型的最终表现起到关键的作用。Sklearn，作为一个广泛使用的Pytho…</p>
+
+          
+            <div class="item__tags">
+              <span class="pill">Python</span><span class="pill">Scikit-Learn</span><span class="pill">机器学习</span><span class="pill">超参数调优</span><span class="pill">模型评估</span><span class="pill">交叉验证</span>
+            </div>
+          
+        </div>
+      </a>
+    
+
+      <a class="item" href="/2023/08/sklearn-regression-algorithm/">
+        <time class="item__date" datetime="2023-08-11T15:53:00.000Z">08-11</time>
+
+        <div class="item__body">
+          <h2 class="item__title">Scikit-Learn 回归算法概述<span class="item__arrow" aria-hidden="true">→</span></h2>
+
+          
+          <p class="item__desc">在机器学习领域，回归分析是一个核心的话题，它的目的是预测一个连续的输出值基于一个或多个输入特征。回归方法有着广泛的应用，从预测股票价格、房地产市场的评估，到天气预测等。尽管有各种各样的回归算法可以选择，但每种方法都有其独…</p>
+
+          
+            <div class="item__tags">
+              <span class="pill">Python</span><span class="pill">Scikit-Learn</span><span class="pill">机器学习</span><span class="pill">回归分析</span><span class="pill">回归算法</span><span class="pill">模型训练</span>
+            </div>
+          
+        </div>
+      </a>
+    
+      <div class="year">
+        <span class="year__n">2020</span>
+        <span class="year__rule"></span>
+      </div>
+    
+
+      <a class="item" href="/2020/09/sublime-text-date-time/">
+        <time class="item__date" datetime="2020-09-08T16:09:04.000Z">09-09</time>
+
+        <div class="item__body">
+          <h2 class="item__title">Sublime Text 3 插入当前日期及时间<span class="item__arrow" aria-hidden="true">→</span></h2>
+
+          
+          <p class="item__desc">Sublime Text 3 是我平时最喜欢的 Coding 工具，没有之一，可以通过 Python 来 DIY 编写很多插件</p>
+
+          
+            <div class="item__tags">
+              <span class="pill">Python</span><span class="pill">Sublime Text</span><span class="pill">插件开发</span><span class="pill">编辑器</span><span class="pill">时间处理</span>
+            </div>
+          
+        </div>
+      </a>
+    
+
+      <a class="item" href="/2020/08/python-mail/">
+        <time class="item__date" datetime="2020-08-22T16:01:08.000Z">08-23</time>
+
+        <div class="item__body">
+          <h2 class="item__title">利用 Python 发送邮件<span class="item__arrow" aria-hidden="true">→</span></h2>
+
+          
+          <p class="item__desc">利用 Python 的内置 SMTP 模块发送邮件，可以配合其他功能（如天气预报等）一起使用</p>
+
+          
+            <div class="item__tags">
+              <span class="pill">Python</span><span class="pill">SMTP</span><span class="pill">邮件</span><span class="pill">自动化</span>
+            </div>
+          
+        </div>
+      </a>
+    
+
+      <a class="item" href="/2020/08/frp/">
+        <time class="item__date" datetime="2020-08-22T06:31:02.000Z">08-22</time>
+
+        <div class="item__body">
+          <h2 class="item__title">利用 frp 进行内网穿透<span class="item__arrow" aria-hidden="true">→</span></h2>
+
+          
+          <p class="item__desc">frp 是一个专注于内网穿透的高性能的反向代理应用，支持 TCP、UDP、HTTP、HTTPS 等多种协议。可以将内网服务以安全、便捷的方式通过具有公网 IP 节点的中转暴露到公网。</p>
+
+          
+            <div class="item__tags">
+              <span class="pill">SSH</span><span class="pill">frp</span><span class="pill">内网穿透</span><span class="pill">反向代理</span><span class="pill">TCP</span><span class="pill">UDP</span>
+            </div>
+          
+        </div>
+      </a>
+    
+
+      <a class="item" href="/2020/08/openvpn">
+        <time class="item__date" datetime="2020-08-17T10:52:58.000Z">08-17</time>
+
+        <div class="item__body">
+          <h2 class="item__title">利用 OpenVPN 加速饥荒服务器<span class="item__arrow" aria-hidden="true">→</span></h2>
+
+          
+          <p class="item__desc">郑重声明：本文仅用于搭建饥荒游戏服务器用，禁止用于任何违反国家法律的用途！</p>
+
+          
+            <div class="item__tags">
+              <span class="pill">Linux</span><span class="pill">饥荒联机版</span><span class="pill">OpenVPN</span><span class="pill">VPN</span><span class="pill">网络加速</span><span class="pill">服务器</span>
+            </div>
+          
+        </div>
+      </a>
+    
+
+      <a class="item" href="/2020/07/r-mice/">
+        <time class="item__date" datetime="2020-07-29T13:11:25.000Z">07-29</time>
+
+        <div class="item__body">
+          <h2 class="item__title">R 语言：缺失数据的多重插补<span class="item__arrow" aria-hidden="true">→</span></h2>
+
+          
+          <p class="item__desc">多重插补 (Mutiple Imputation, MI) 是一种应对无反应误差 (nonresponse bias) 的方法，即当人们无法对调查做出回应时，会丢失研究数据。将创建同一数据集的多个版本，然后将其组合以形成…</p>
+
+          
+            <div class="item__tags">
+              <span class="pill">R</span><span class="pill">多重插补</span><span class="pill">缺失数据</span><span class="pill">数据分析</span><span class="pill">统计学</span>
+            </div>
+          
+        </div>
+      </a>
+    
+  </div>
+
+
+  
+<nav class="pager" aria-label="Pagination">
+  
+    <span class="pager__btn is-off"><span aria-hidden="true">←</span> 更新</span>
+  
+
+  <span class="pager__count">1 / 3</span>
+
+  
+    <a class="pager__btn" href="/archives/page/2/" rel="next">更早 <span aria-hidden="true">→</span></a>
+  
+</nav>
+
+
+</section>
+</main>
+
+  
+<footer class="foot">
+  <div class="wrap foot__in">
+    <div class="foot__left">
+      
+      <p class="foot__copy">© 2026 辣椒小皇纸</p>
+    </div>
+
+    <div class="foot__right">
+      
+        <a class="foot__link" href="https://github.com/suhuang64" target="_blank" rel="noopener noreferrer">GitHub</a>
+      
+      
+    </div>
+  </div>
+</footer>
+
+
+  
+    <button class="totop" id="totop" type="button" aria-label="回到顶部">
+      <svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true" focusable="false">
+        <path d="M8 3.6l5.2 5.2-1.1 1.1L8.8 6.8V13h-1.6V6.8L3.9 9.9 2.8 8.8z" fill="currentColor"/>
+      </svg>
+    </button>
+  
+
+  
+    
+<div class="shortcuts" id="shortcuts" aria-hidden="true">
+  <p class="shortcuts__label">快捷键</p>
+  <ul class="shortcuts__list">
+    <li><kbd>Shift</kbd><span>+</span><kbd>T</kbd><span class="shortcuts__text">切换主题</span></li>
+    <li><kbd>Shift</kbd><span>+</span><kbd>H</kbd><span class="shortcuts__text">回到首页</span></li>
+    <li><kbd>Shift</kbd><span>+</span><kbd>R</kbd><span class="shortcuts__text">随机文章</span></li>
+  </ul>
+</div>
+
+  
+
+  
+    <script type="application/json" id="post-index">["/2019/09/linux-screen/","/2019/09/linux-dst-server/","/2019/09/ubuntu-sudo-no-password/","/2019/09/gitee-hexo/","/2019/11/windows-dst-server/","/2019/11/diy-dst-cmd/","/dst/","/2019/11/dst-nickname/","/2020/02/dst-wx78/","/2020/03/aria2-h5ai/","/2020/05/github-action-hexo/","/2020/08/python-mail/","/2020/08/openvpn","/2020/09/sublime-text-date-time/","/2023/08/sklearn-paramenter-tune/","/2020/08/frp/","/2020/07/r-mice/","/2023/08/sklearn-regression-algorithm/","/2026/08/compress-pdf-with-python/","/2024/09/mongorestore/","/2026/08/github-pull-request/"]</script>
+  
+
+  <script src="/js/main.js" defer></script>
+</body>
+</html>

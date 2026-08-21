@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+
+  
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#fcfcfb" media="(prefers-color-scheme: light)" id="tc-light">
+  <meta name="theme-color" content="#171715" media="(prefers-color-scheme: dark)" id="tc-dark">
+
+  <script>
+    (function () {
+      var root = document.documentElement;
+      var key  = 'idyll-theme';
+
+      root.classList.add('js');
+
+      var saved = null;
+      try { saved = localStorage.getItem(key); } catch (err) {}
+
+      var tcLight = document.getElementById('tc-light');
+      var tcDark  = document.getElementById('tc-dark');
+      var colors  = { light: '#fcfcfb', dark: '#171715' };
+
+      function syncChrome(mode) {
+        if (tcLight && tcDark) {
+          var c = colors[mode] || null;
+          tcLight.content = c || '#fcfcfb';
+          tcDark.content  = c || '#171715';
+        }
+      }
+
+      if (saved === 'light' || saved === 'dark') {
+        root.setAttribute('data-theme', saved);
+        syncChrome(saved);
+      }
+
+      function wire() {
+        var btn = document.getElementById('theme');
+        if (!btn) return;
+
+        var state = document.getElementById('theme-state');
+
+        function paint(mode) {
+          if (mode) root.setAttribute('data-theme', mode);
+          else root.removeAttribute('data-theme');
+
+          if (state) state.textContent = btn.getAttribute('data-' + (mode || 'auto'));
+
+          syncChrome(mode);
+
+          try {
+            if (mode) localStorage.setItem(key, mode);
+            else localStorage.removeItem(key);
+          } catch (err) {}
+
+          
+          document.dispatchEvent(new CustomEvent('idyll:theme', { detail: mode || 'auto' }));
+        }
+
+        btn.addEventListener('click', function () {
+          var cur     = root.getAttribute('data-theme') || '';
+          var sysDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+          if (cur === '') paint(sysDark ? 'light' : 'dark');
+          else if (cur === 'light') paint('dark');
+          else paint('');
+        });
+
+        paint(root.getAttribute('data-theme') || '');
+      }
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', wire);
+      } else {
+        wire();
+      }
+    })();
+  </script>
+
+  <title>使用 mongorestore 恢复 MongoDB 集合 · 辣椒手记</title>
+  <meta name="description" content="在使用 MongoDB 进行数据备份和恢复的过程中，mongorestore 是一个非常实用的工具，它允许我们从备份中恢复数据库或特定的集合。有时，我们在恢复集合之前，可能需要先清空目标集合，以确保不会有旧数据的干扰。本篇博文将介绍如何在恢复 MongoDB 集合前清空该集合，并使用 mongore…">
+  <meta name="author" content="辣椒小皇纸">
+  
+
+  <meta name="description" content="在使用 MongoDB 进行数据备份和恢复的过程中，mongorestore 是一个非常实用的工具，它允许我们从备份中恢复数据库或特定的集合。有时，我们在恢复集合之前，可能需要先清空目标集合，以确保不会有旧数据的干扰。本篇博文将介绍如何在恢复 MongoDB 集合前清空该集合，并使用 mongore…">
+<meta property="og:type" content="article">
+<meta property="og:title" content="使用 mongorestore 恢复 MongoDB 集合 · 辣椒手记">
+<meta property="og:url" content="https://peppernotes.top/2024/09/mongorestore/index.html">
+<meta property="og:site_name" content="辣椒手记">
+<meta property="og:description" content="在使用 MongoDB 进行数据备份和恢复的过程中，mongorestore 是一个非常实用的工具，它允许我们从备份中恢复数据库或特定的集合。有时，我们在恢复集合之前，可能需要先清空目标集合，以确保不会有旧数据的干扰。本篇博文将介绍如何在恢复 MongoDB 集合前清空该集合，并使用 mongore…">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2024-09-13T01:18:00.000Z">
+<meta property="article:modified_time" content="2024-09-13T01:18:00.000Z">
+<meta property="article:author" content="辣椒小皇纸">
+<meta property="article:tag" content="MongoDB">
+<meta property="article:tag" content="mongodump">
+<meta property="article:tag" content="mongorestore">
+<meta property="article:tag" content="数据库备份">
+<meta property="article:tag" content="数据恢复">
+<meta property="article:tag" content="集合">
+<meta name="twitter:card" content="summary">
+  
+  <link rel="canonical" href="https://peppernotes.top/2024/09/mongorestore/">
+  <link rel="icon" href="/images/favicon.svg" type="image/svg+xml">
+  
+
+  <link rel="stylesheet" href="/css/style.css">
+  
+
+<meta name="generator" content="Hexo 8.1.2"></head>
+
+<body data-idyll="copy anchor ext toc shortcut"
+      data-copy="复制"
+      data-copied="已复制"
+      data-copyfail="请按 Ctrl+C"
+      data-anchor="链接到这一节">
+
+  
+    <div class="progress" id="progress" aria-hidden="true"><i></i></div>
+  
+
+  <a class="skip" href="#main">跳到正文</a>
+
+  <header class="nav" id="nav">
+  <div class="wrap nav__in">
+    <a class="nav__brand" href="/">
+      <span class="nav__mark" aria-hidden="true"></span>
+      <span class="nav__name">辣椒手记</span>
+    </a>
+
+    <div class="nav__right">
+      <nav class="nav__links" aria-label="站点导航">
+        
+          <a class="nav__link"
+             href="/">首页</a>
+        
+          <a class="nav__link"
+             href="/archives/">归档</a>
+        
+          <a class="nav__link"
+             href="/categories/">分类</a>
+        
+          <a class="nav__link"
+             href="/tags/">标签</a>
+        
+          <a class="nav__link"
+             href="/series/">系列</a>
+        
+          <a class="nav__link"
+             href="/about/">关于</a>
+        
+      </nav>
+
+      
+        
+        <button class="theme" id="theme" type="button"
+                data-auto="跟随系统"
+                data-light="亮色"
+                data-dark="暗色">
+          <svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true" focusable="false">
+            <g class="theme__ico theme__ico--auto">
+              <circle cx="8" cy="8" r="5.6" fill="none" stroke="currentColor" stroke-width="1.4"/>
+              <path d="M8 2.4a5.6 5.6 0 0 0 0 11.2z" fill="currentColor"/>
+            </g>
+            <g class="theme__ico theme__ico--light"
+               fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round">
+              <circle cx="8" cy="8" r="3.1"/>
+              <path d="M8 1.3v1.3M8 13.4v1.3M14.7 8h-1.3M2.6 8H1.3M12.74 3.26l-.92.92M4.18 11.82l-.92.92M12.74 12.74l-.92-.92M4.18 4.18l-.92-.92"/>
+            </g>
+            <g class="theme__ico theme__ico--dark">
+              <path d="M14 8.53A6 6 0 1 1 7.47 2 4.67 4.67 0 0 0 14 8.53z"
+                    fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
+            </g>
+          </svg>
+          
+          <span class="sr-only" id="theme-state" aria-live="polite">跟随系统</span>
+        </button>
+      
+    </div>
+  </div>
+</header>
+
+
+  <main class="main" id="main">
+
+<article class="post">
+  <header class="wrap post__head">
+    
+      <p class="post__kicker">
+        <a href="/categories/%E6%8A%80%E6%9C%AF/">技术</a><span class="sep">/</span><a href="/categories/%E6%8A%80%E6%9C%AF/%E6%95%B0%E6%8D%AE%E5%BA%93/">数据库</a>
+      </p>
+    
+
+    <h1 class="post__title">使用 mongorestore 恢复 MongoDB 集合</h1>
+
+    <div class="post__meta">
+      
+      <time datetime="2024-09-13T01:18:00.000Z"><span class="sr-only">发布于 </span>2024-09-13</time>
+      
+        <span class="dot" aria-hidden="true">·</span>
+        <span>849 字</span>
+      
+      
+        <span class="dot" aria-hidden="true">·</span>
+        <span>3 分钟</span>
+      
+      
+    </div>
+  </header>
+
+  
+<nav class="toc" aria-label="目录">
+  <p class="toc__label">目录</p>
+  <ol class="toc__list">
+    
+      <li>
+        <a class="toc__link" href="#1-前提条件" data-toc-id="1-前提条件" title="1. 前提条件">1. 前提条件</a>
+        
+      </li>
+    
+      <li>
+        <a class="toc__link" href="#2-清空-MongoDB-集合" data-toc-id="2-清空-MongoDB-集合" title="2. 清空 MongoDB 集合">2. 清空 MongoDB 集合</a>
+        
+          <ol class="toc__list toc__list--sub">
+            
+              <li><a class="toc__link toc__link--sub" href="#步骤-1：连接到-MongoDB" data-toc-id="步骤-1：连接到-MongoDB" title="步骤 1：连接到 MongoDB">步骤 1：连接到 MongoDB</a></li>
+            
+              <li><a class="toc__link toc__link--sub" href="#步骤-2：切换到目标数据库" data-toc-id="步骤-2：切换到目标数据库" title="步骤 2：切换到目标数据库">步骤 2：切换到目标数据库</a></li>
+            
+              <li><a class="toc__link toc__link--sub" href="#步骤-3：清空目标集合" data-toc-id="步骤-3：清空目标集合" title="步骤 3：清空目标集合">步骤 3：清空目标集合</a></li>
+            
+          </ol>
+        
+      </li>
+    
+      <li>
+        <a class="toc__link" href="#3-使用-mongorestore-恢复集合" data-toc-id="3-使用-mongorestore-恢复集合" title="3. 使用 mongorestore 恢复集合">3. 使用 mongorestore 恢复集合</a>
+        
+          <ol class="toc__list toc__list--sub">
+            
+              <li><a class="toc__link toc__link--sub" href="#恢复特定集合的命令" data-toc-id="恢复特定集合的命令" title="恢复特定集合的命令">恢复特定集合的命令</a></li>
+            
+              <li><a class="toc__link toc__link--sub" href="#额外注意事项" data-toc-id="额外注意事项" title="额外注意事项">额外注意事项</a></li>
+            
+          </ol>
+        
+      </li>
+    
+      <li>
+        <a class="toc__link" href="#4-总结" data-toc-id="4-总结" title="4. 总结">4. 总结</a>
+        
+      </li>
+    
+  </ol>
+</nav>
+
+
+  <div class="wrap prose" id="content"><p>在使用 MongoDB 进行数据备份和恢复的过程中，<code>mongorestore</code> 是一个非常实用的工具，它允许我们从备份中恢复数据库或特定的集合。有时，我们在恢复集合之前，可能需要先清空目标集合，以确保不会有旧数据的干扰。本篇博文将介绍如何在恢复 MongoDB 集合前清空该集合，并使用 <code>mongorestore</code> 进行恢复。</p>
+<span id="more"></span>
+
+<h2 id="1-前提条件"><a href="#1-前提条件" class="headerlink" title="1. 前提条件"></a>1. 前提条件</h2><p>在开始之前，请确保你已经满足以下条件：</p>
+<ul>
+<li>MongoDB 已经正确安装并正在运行。</li>
+<li>你已备份了 MongoDB 集合（通常是通过 <code>mongodump</code> 生成的 <code>.bson</code> 文件）。</li>
+<li>你有适当的权限连接到 MongoDB 实例，并对目标数据库和集合执行操作。</li>
+</ul>
+<h2 id="2-清空-MongoDB-集合"><a href="#2-清空-MongoDB-集合" class="headerlink" title="2. 清空 MongoDB 集合"></a>2. 清空 MongoDB 集合</h2><p>在恢复数据前，通常需要清空目标集合中的旧数据。你可以使用 MongoDB 的 <code>mongo</code> shell 或其他 MongoDB 客户端工具来完成这个操作。</p>
+<h3 id="步骤-1：连接到-MongoDB"><a href="#步骤-1：连接到-MongoDB" class="headerlink" title="步骤 1：连接到 MongoDB"></a>步骤 1：连接到 MongoDB</h3><p>首先，通过 <code>mongo</code> shell 连接到你的 MongoDB 实例：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mongo</span><br></pre></td></tr></table></figure>
+
+<h3 id="步骤-2：切换到目标数据库"><a href="#步骤-2：切换到目标数据库" class="headerlink" title="步骤 2：切换到目标数据库"></a>步骤 2：切换到目标数据库</h3><p>在 MongoDB shell 中，使用 <code>use</code> 命令切换到你想要清空集合的数据库。例如，如果数据库名为 <code>mydatabase</code>，运行以下命令：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">use mydatabase</span><br></pre></td></tr></table></figure>
+
+<h3 id="步骤-3：清空目标集合"><a href="#步骤-3：清空目标集合" class="headerlink" title="步骤 3：清空目标集合"></a>步骤 3：清空目标集合</h3><p>要清空集合中的所有文档，可以使用 <code>deleteMany</code> 命令。这个命令不会删除集合本身及其索引，它只会删除所有文档。</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">db.<span class="property">mycollection</span>.<span class="title function_">deleteMany</span>(&#123;&#125;)</span><br></pre></td></tr></table></figure>
+
+<p>例如，如果你的集合名是 <code>mycollection</code>，那么执行上面的命令将清空 <code>mydatabase</code> 中的 <code>mycollection</code> 集合。</p>
+<h2 id="3-使用-mongorestore-恢复集合"><a href="#3-使用-mongorestore-恢复集合" class="headerlink" title="3. 使用 mongorestore 恢复集合"></a>3. 使用 <code>mongorestore</code> 恢复集合</h2><p>在清空集合后，你可以使用 <code>mongorestore</code> 命令将备份的数据恢复到集合中。</p>
+<h3 id="恢复特定集合的命令"><a href="#恢复特定集合的命令" class="headerlink" title="恢复特定集合的命令"></a>恢复特定集合的命令</h3><p><code>mongorestore</code> 支持只恢复特定的集合，而不需要恢复整个数据库。基本的命令格式如下：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mongorestore --db &lt;数据库名&gt; --collection &lt;集合名&gt; &lt;备份文件路径&gt;</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><code>&lt;数据库名&gt;</code>：要恢复的数据库名称。</li>
+<li><code>&lt;集合名&gt;</code>：要恢复的集合名称。</li>
+<li><code>&lt;备份文件路径&gt;</code>：备份文件的路径，通常是一个以 <code>.bson</code> 结尾的文件。</li>
+</ul>
+<p>例如，如果你想将备份文件 <code>backup/mycollection.bson</code> 恢复到 <code>mydatabase</code> 数据库中的 <code>mycollection</code> 集合，命令如下：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mongorestore --db mydatabase --collection mycollection backup/mycollection.bson</span><br></pre></td></tr></table></figure>
+
+<h3 id="额外注意事项"><a href="#额外注意事项" class="headerlink" title="额外注意事项"></a>额外注意事项</h3><ol>
+<li><strong>恢复索引</strong>：<code>mongorestore</code> 也可以恢复集合的索引，通常是自动完成的。如果你还需要恢复用户角色和权限，可以使用 <code>--restoreDbUsersAndRoles</code> 选项。</li>
+<li><strong>覆盖现有文档</strong>：默认情况下，<code>mongorestore</code> 不会覆盖已存在的文档。为了防止重复数据出现，你可以在恢复前清空集合，正如上文所述。</li>
+</ol>
+<h2 id="4-总结"><a href="#4-总结" class="headerlink" title="4. 总结"></a>4. 总结</h2><p>在 MongoDB 中，当你需要恢复特定集合时，先清空集合可以避免旧数据的干扰。清空集合非常简单，只需使用 <code>deleteMany</code> 删除集合中的所有文档。然后，通过 <code>mongorestore</code> 恢复备份文件到相应的集合中。通过这种方法，你能够安全、高效地管理 MongoDB 数据库中的数据恢复过程。</p>
+<p>希望这篇博文能够帮助你更好地理解和使用 <code>mongorestore</code>，以及在恢复前如何清空目标集合。如果你在使用过程中遇到任何问题，欢迎留言讨论！</p>
+</div>
+
+  <footer class="wrap post__foot">
+    
+      <div class="post__tags">
+        <a class="pill pill--link" href="/tags/MongoDB/">MongoDB</a><a class="pill pill--link" href="/tags/mongorestore/">mongorestore</a><a class="pill pill--link" href="/tags/mongodump/">mongodump</a><a class="pill pill--link" href="/tags/%E6%95%B0%E6%8D%AE%E5%BA%93%E5%A4%87%E4%BB%BD/">数据库备份</a><a class="pill pill--link" href="/tags/%E6%95%B0%E6%8D%AE%E6%81%A2%E5%A4%8D/">数据恢复</a><a class="pill pill--link" href="/tags/%E9%9B%86%E5%90%88/">集合</a>
+      </div>
+    
+
+    
+
+    
+<section class="related" aria-label="相关文章">
+  <p class="related__label">相关文章</p>
+  <ul class="related__list">
+    
+      <li>
+        <a class="related__link" href="/2026/08/compress-pdf-with-python/">
+          <span class="related__title">使用 Python 质量压缩 PDF<span class="item__arrow" aria-hidden="true">→</span></span>
+          <time class="related__date" datetime="2026-08-21T04:00:00.000Z">2026-08-21</time>
+        </a>
+      </li>
+    
+      <li>
+        <a class="related__link" href="/2026/08/github-pull-request/">
+          <span class="related__title">GitHub Pull Request 完整教程：从 Fork、提交 PR 到同步上游仓库<span class="item__arrow" aria-hidden="true">→</span></span>
+          <time class="related__date" datetime="2026-08-20T09:02:00.000Z">2026-08-20</time>
+        </a>
+      </li>
+    
+      <li>
+        <a class="related__link" href="/2020/09/sublime-text-date-time/">
+          <span class="related__title">Sublime Text 3 插入当前日期及时间<span class="item__arrow" aria-hidden="true">→</span></span>
+          <time class="related__date" datetime="2020-09-08T16:09:04.000Z">2020-09-09</time>
+        </a>
+      </li>
+    
+  </ul>
+</section>
+
+
+    
+      <nav class="nextprev" aria-label="归档">
+        
+          <a class="nextprev__card" href="/2026/08/github-pull-request/" rel="prev">
+            <span class="nextprev__label"><span aria-hidden="true">←</span> 上一篇</span>
+            <span class="nextprev__title">GitHub Pull Request 完整教程：从 Fork、提交 PR 到同步上游仓库</span>
+          </a>
+        
+
+        
+          <a class="nextprev__card nextprev__card--r" href="/2023/08/sklearn-paramenter-tune/" rel="next">
+            <span class="nextprev__label">下一篇 <span aria-hidden="true">→</span></span>
+            <span class="nextprev__title">Scikit-Learn 参数调优和评估</span>
+          </a>
+        
+      </nav>
+    
+  </footer>
+</article>
+
+
+
+
+
+</main>
+
+  
+<footer class="foot">
+  <div class="wrap foot__in">
+    <div class="foot__left">
+      
+      <p class="foot__copy">© 2026 辣椒小皇纸</p>
+    </div>
+
+    <div class="foot__right">
+      
+        <a class="foot__link" href="https://github.com/suhuang64" target="_blank" rel="noopener noreferrer">GitHub</a>
+      
+      
+    </div>
+  </div>
+</footer>
+
+
+  
+    <button class="totop" id="totop" type="button" aria-label="回到顶部">
+      <svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true" focusable="false">
+        <path d="M8 3.6l5.2 5.2-1.1 1.1L8.8 6.8V13h-1.6V6.8L3.9 9.9 2.8 8.8z" fill="currentColor"/>
+      </svg>
+    </button>
+  
+
+  
+    
+<div class="shortcuts" id="shortcuts" aria-hidden="true">
+  <p class="shortcuts__label">快捷键</p>
+  <ul class="shortcuts__list">
+    <li><kbd>Shift</kbd><span>+</span><kbd>T</kbd><span class="shortcuts__text">切换主题</span></li>
+    <li><kbd>Shift</kbd><span>+</span><kbd>H</kbd><span class="shortcuts__text">回到首页</span></li>
+    <li><kbd>Shift</kbd><span>+</span><kbd>R</kbd><span class="shortcuts__text">随机文章</span></li>
+  </ul>
+</div>
+
+  
+
+  
+    <script type="application/json" id="post-index">["/2019/09/linux-screen/","/2019/09/linux-dst-server/","/2019/09/ubuntu-sudo-no-password/","/2019/09/gitee-hexo/","/2019/11/windows-dst-server/","/2019/11/diy-dst-cmd/","/dst/","/2019/11/dst-nickname/","/2020/02/dst-wx78/","/2020/03/aria2-h5ai/","/2020/05/github-action-hexo/","/2020/08/python-mail/","/2020/08/openvpn","/2020/09/sublime-text-date-time/","/2023/08/sklearn-paramenter-tune/","/2020/08/frp/","/2020/07/r-mice/","/2023/08/sklearn-regression-algorithm/","/2026/08/compress-pdf-with-python/","/2024/09/mongorestore/","/2026/08/github-pull-request/"]</script>
+  
+
+  <script src="/js/main.js" defer></script>
+</body>
+</html>

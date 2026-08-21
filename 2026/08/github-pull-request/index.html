@@ -1,0 +1,1108 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+
+  
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#fcfcfb" media="(prefers-color-scheme: light)" id="tc-light">
+  <meta name="theme-color" content="#171715" media="(prefers-color-scheme: dark)" id="tc-dark">
+
+  <script>
+    (function () {
+      var root = document.documentElement;
+      var key  = 'idyll-theme';
+
+      root.classList.add('js');
+
+      var saved = null;
+      try { saved = localStorage.getItem(key); } catch (err) {}
+
+      var tcLight = document.getElementById('tc-light');
+      var tcDark  = document.getElementById('tc-dark');
+      var colors  = { light: '#fcfcfb', dark: '#171715' };
+
+      function syncChrome(mode) {
+        if (tcLight && tcDark) {
+          var c = colors[mode] || null;
+          tcLight.content = c || '#fcfcfb';
+          tcDark.content  = c || '#171715';
+        }
+      }
+
+      if (saved === 'light' || saved === 'dark') {
+        root.setAttribute('data-theme', saved);
+        syncChrome(saved);
+      }
+
+      function wire() {
+        var btn = document.getElementById('theme');
+        if (!btn) return;
+
+        var state = document.getElementById('theme-state');
+
+        function paint(mode) {
+          if (mode) root.setAttribute('data-theme', mode);
+          else root.removeAttribute('data-theme');
+
+          if (state) state.textContent = btn.getAttribute('data-' + (mode || 'auto'));
+
+          syncChrome(mode);
+
+          try {
+            if (mode) localStorage.setItem(key, mode);
+            else localStorage.removeItem(key);
+          } catch (err) {}
+
+          
+          document.dispatchEvent(new CustomEvent('idyll:theme', { detail: mode || 'auto' }));
+        }
+
+        btn.addEventListener('click', function () {
+          var cur     = root.getAttribute('data-theme') || '';
+          var sysDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+          if (cur === '') paint(sysDark ? 'light' : 'dark');
+          else if (cur === 'light') paint('dark');
+          else paint('');
+        });
+
+        paint(root.getAttribute('data-theme') || '');
+      }
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', wire);
+      } else {
+        wire();
+      }
+    })();
+  </script>
+
+  <title>GitHub Pull Request 完整教程：从 Fork、提交 PR 到同步上游仓库 · 辣椒手记</title>
+  <meta name="description" content="在参与 GitHub 开源项目时，一个非常常见的工作流是： Fork 别人的项目 → 修改代码 → 提交 Pull Request → 作者 Review → Merge 或 Reject → 继续同步原项目">
+  <meta name="author" content="辣椒小皇纸">
+  
+
+  <meta name="description" content="在参与 GitHub 开源项目时，一个非常常见的工作流是： Fork 别人的项目 → 修改代码 → 提交 Pull Request → 作者 Review → Merge 或 Reject → 继续同步原项目">
+<meta property="og:type" content="article">
+<meta property="og:title" content="GitHub Pull Request 完整教程：从 Fork、提交 PR 到同步上游仓库 · 辣椒手记">
+<meta property="og:url" content="https://peppernotes.top/2026/08/github-pull-request/index.html">
+<meta property="og:site_name" content="辣椒手记">
+<meta property="og:description" content="在参与 GitHub 开源项目时，一个非常常见的工作流是： Fork 别人的项目 → 修改代码 → 提交 Pull Request → 作者 Review → Merge 或 Reject → 继续同步原项目">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2026-08-20T09:02:00.000Z">
+<meta property="article:modified_time" content="2026-08-20T09:02:00.000Z">
+<meta property="article:author" content="辣椒小皇纸">
+<meta property="article:tag" content="Fork">
+<meta property="article:tag" content="Git">
+<meta property="article:tag" content="GitHub">
+<meta property="article:tag" content="Pull Request">
+<meta property="article:tag" content="开源协作">
+<meta property="article:tag" content="版本控制">
+<meta name="twitter:card" content="summary">
+  
+  <link rel="canonical" href="https://peppernotes.top/2026/08/github-pull-request/">
+  <link rel="icon" href="/images/favicon.svg" type="image/svg+xml">
+  
+
+  <link rel="stylesheet" href="/css/style.css">
+  
+
+<meta name="generator" content="Hexo 8.1.2"></head>
+
+<body data-idyll="copy anchor ext toc shortcut"
+      data-copy="复制"
+      data-copied="已复制"
+      data-copyfail="请按 Ctrl+C"
+      data-anchor="链接到这一节">
+
+  
+    <div class="progress" id="progress" aria-hidden="true"><i></i></div>
+  
+
+  <a class="skip" href="#main">跳到正文</a>
+
+  <header class="nav" id="nav">
+  <div class="wrap nav__in">
+    <a class="nav__brand" href="/">
+      <span class="nav__mark" aria-hidden="true"></span>
+      <span class="nav__name">辣椒手记</span>
+    </a>
+
+    <div class="nav__right">
+      <nav class="nav__links" aria-label="站点导航">
+        
+          <a class="nav__link"
+             href="/">首页</a>
+        
+          <a class="nav__link"
+             href="/archives/">归档</a>
+        
+          <a class="nav__link"
+             href="/categories/">分类</a>
+        
+          <a class="nav__link"
+             href="/tags/">标签</a>
+        
+          <a class="nav__link"
+             href="/series/">系列</a>
+        
+          <a class="nav__link"
+             href="/about/">关于</a>
+        
+      </nav>
+
+      
+        
+        <button class="theme" id="theme" type="button"
+                data-auto="跟随系统"
+                data-light="亮色"
+                data-dark="暗色">
+          <svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true" focusable="false">
+            <g class="theme__ico theme__ico--auto">
+              <circle cx="8" cy="8" r="5.6" fill="none" stroke="currentColor" stroke-width="1.4"/>
+              <path d="M8 2.4a5.6 5.6 0 0 0 0 11.2z" fill="currentColor"/>
+            </g>
+            <g class="theme__ico theme__ico--light"
+               fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round">
+              <circle cx="8" cy="8" r="3.1"/>
+              <path d="M8 1.3v1.3M8 13.4v1.3M14.7 8h-1.3M2.6 8H1.3M12.74 3.26l-.92.92M4.18 11.82l-.92.92M12.74 12.74l-.92-.92M4.18 4.18l-.92-.92"/>
+            </g>
+            <g class="theme__ico theme__ico--dark">
+              <path d="M14 8.53A6 6 0 1 1 7.47 2 4.67 4.67 0 0 0 14 8.53z"
+                    fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
+            </g>
+          </svg>
+          
+          <span class="sr-only" id="theme-state" aria-live="polite">跟随系统</span>
+        </button>
+      
+    </div>
+  </div>
+</header>
+
+
+  <main class="main" id="main">
+
+<article class="post">
+  <header class="wrap post__head">
+    
+      <p class="post__kicker">
+        <a href="/categories/%E6%8A%80%E6%9C%AF/">技术</a><span class="sep">/</span><a href="/categories/%E6%8A%80%E6%9C%AF/Git/">Git</a>
+      </p>
+    
+
+    <h1 class="post__title">GitHub Pull Request 完整教程：从 Fork、提交 PR 到同步上游仓库</h1>
+
+    <div class="post__meta">
+      
+      <time datetime="2026-08-20T09:02:00.000Z"><span class="sr-only">发布于 </span>2026-08-20</time>
+      
+        <span class="dot" aria-hidden="true">·</span>
+        <span>3,735 字</span>
+      
+      
+        <span class="dot" aria-hidden="true">·</span>
+        <span>12 分钟</span>
+      
+      
+    </div>
+  </header>
+
+  
+<nav class="toc" aria-label="目录">
+  <p class="toc__label">目录</p>
+  <ol class="toc__list">
+    
+      <li>
+        <a class="toc__link" href="#一、先理解三个仓库：upstream、origin-和-local" data-toc-id="一、先理解三个仓库：upstream、origin-和-local" title="一、先理解三个仓库：upstream、origin 和 local">一、先理解三个仓库：upstream、origin 和 local</a>
+        
+      </li>
+    
+      <li>
+        <a class="toc__link" href="#二、Fork-项目后的第一次配置" data-toc-id="二、Fork-项目后的第一次配置" title="二、Fork 项目后的第一次配置">二、Fork 项目后的第一次配置</a>
+        
+      </li>
+    
+      <li>
+        <a class="toc__link" href="#三、最重要的原则：不要直接在-main-上开发" data-toc-id="三、最重要的原则：不要直接在-main-上开发" title="三、最重要的原则：不要直接在 main 上开发">三、最重要的原则：不要直接在 main 上开发</a>
+        
+      </li>
+    
+      <li>
+        <a class="toc__link" href="#四、修改完成后提交代码" data-toc-id="四、修改完成后提交代码" title="四、修改完成后提交代码">四、修改完成后提交代码</a>
+        
+      </li>
+    
+      <li>
+        <a class="toc__link" href="#五、创建-Pull-Request" data-toc-id="五、创建-Pull-Request" title="五、创建 Pull Request">五、创建 Pull Request</a>
+        
+      </li>
+    
+      <li>
+        <a class="toc__link" href="#六、Pull-Request-提交之后会发生什么？" data-toc-id="六、Pull-Request-提交之后会发生什么？" title="六、Pull Request 提交之后会发生什么？">六、Pull Request 提交之后会发生什么？</a>
+        
+      </li>
+    
+      <li>
+        <a class="toc__link" href="#七、情况一：作者完全接受-PR" data-toc-id="七、情况一：作者完全接受-PR" title="七、情况一：作者完全接受 PR">七、情况一：作者完全接受 PR</a>
+        
+      </li>
+    
+      <li>
+        <a class="toc__link" href="#八、情况二：PR-被拒绝会怎么样？" data-toc-id="八、情况二：PR-被拒绝会怎么样？" title="八、情况二：PR 被拒绝会怎么样？">八、情况二：PR 被拒绝会怎么样？</a>
+        
+      </li>
+    
+      <li>
+        <a class="toc__link" href="#九、PR-被拒绝以后，不想要这些代码怎么办？" data-toc-id="九、PR-被拒绝以后，不想要这些代码怎么办？" title="九、PR 被拒绝以后，不想要这些代码怎么办？">九、PR 被拒绝以后，不想要这些代码怎么办？</a>
+        
+      </li>
+    
+      <li>
+        <a class="toc__link" href="#十、如果-PR-被拒绝，但我自己还想继续用这个功能呢？" data-toc-id="十、如果-PR-被拒绝，但我自己还想继续用这个功能呢？" title="十、如果 PR 被拒绝，但我自己还想继续用这个功能呢？">十、如果 PR 被拒绝，但我自己还想继续用这个功能呢？</a>
+        
+      </li>
+    
+      <li>
+        <a class="toc__link" href="#十一、作者只接受部分修改怎么办？" data-toc-id="十一、作者只接受部分修改怎么办？" title="十一、作者只接受部分修改怎么办？">十一、作者只接受部分修改怎么办？</a>
+        
+      </li>
+    
+      <li>
+        <a class="toc__link" href="#十二、原作者更新项目以后，我的-Fork-怎么同步？" data-toc-id="十二、原作者更新项目以后，我的-Fork-怎么同步？" title="十二、原作者更新项目以后，我的 Fork 怎么同步？">十二、原作者更新项目以后，我的 Fork 怎么同步？</a>
+        
+      </li>
+    
+      <li>
+        <a class="toc__link" href="#十三、通过-Git-命令同步-upstream" data-toc-id="十三、通过-Git-命令同步-upstream" title="十三、通过 Git 命令同步 upstream">十三、通过 Git 命令同步 upstream</a>
+        
+      </li>
+    
+      <li>
+        <a class="toc__link" href="#十四、也可以直接在-GitHub-网页同步-Fork" data-toc-id="十四、也可以直接在-GitHub-网页同步-Fork" title="十四、也可以直接在 GitHub 网页同步 Fork">十四、也可以直接在 GitHub 网页同步 Fork</a>
+        
+      </li>
+    
+      <li>
+        <a class="toc__link" href="#十五、为什么不要直接修改自己的-main？" data-toc-id="十五、为什么不要直接修改自己的-main？" title="十五、为什么不要直接修改自己的 main？">十五、为什么不要直接修改自己的 main？</a>
+        
+      </li>
+    
+      <li>
+        <a class="toc__link" href="#十六、正确方式：main-跟踪-upstream，功能放-branch" data-toc-id="十六、正确方式：main-跟踪-upstream，功能放-branch" title="十六、正确方式：main 跟踪 upstream，功能放 branch">十六、正确方式：main 跟踪 upstream，功能放 branch</a>
+        
+      </li>
+    
+      <li>
+        <a class="toc__link" href="#十七、正在开发-Feature-时，upstream-更新了怎么办？" data-toc-id="十七、正在开发-Feature-时，upstream-更新了怎么办？" title="十七、正在开发 Feature 时，upstream 更新了怎么办？">十七、正在开发 Feature 时，upstream 更新了怎么办？</a>
+        
+      </li>
+    
+      <li>
+        <a class="toc__link" href="#十八、方法一：merge-upstream-main" data-toc-id="十八、方法一：merge-upstream-main" title="十八、方法一：merge upstream/main">十八、方法一：merge upstream/main</a>
+        
+      </li>
+    
+      <li>
+        <a class="toc__link" href="#十九、方法二：rebase-upstream-main" data-toc-id="十九、方法二：rebase-upstream-main" title="十九、方法二：rebase upstream/main">十九、方法二：rebase upstream/main</a>
+        
+      </li>
+    
+      <li>
+        <a class="toc__link" href="#二十、为什么-rebase-后有时候要-Force-Push？" data-toc-id="二十、为什么-rebase-后有时候要-Force-Push？" title="二十、为什么 rebase 后有时候要 Force Push？">二十、为什么 rebase 后有时候要 Force Push？</a>
+        
+      </li>
+    
+      <li>
+        <a class="toc__link" href="#二十一、完整-Pull-Request-工作流" data-toc-id="二十一、完整-Pull-Request-工作流" title="二十一、完整 Pull Request 工作流">二十一、完整 Pull Request 工作流</a>
+        
+      </li>
+    
+      <li>
+        <a class="toc__link" href="#二十二、一个完整的实战例子" data-toc-id="二十二、一个完整的实战例子" title="二十二、一个完整的实战例子">二十二、一个完整的实战例子</a>
+        
+          <ol class="toc__list toc__list--sub">
+            
+              <li><a class="toc__link toc__link--sub" href="#Step-1：Clone-自己的-Fork" data-toc-id="Step-1：Clone-自己的-Fork" title="Step 1：Clone 自己的 Fork">Step 1：Clone 自己的 Fork</a></li>
+            
+              <li><a class="toc__link toc__link--sub" href="#Step-2：添加-upstream" data-toc-id="Step-2：添加-upstream" title="Step 2：添加 upstream">Step 2：添加 upstream</a></li>
+            
+              <li><a class="toc__link toc__link--sub" href="#Step-3：同步-main" data-toc-id="Step-3：同步-main" title="Step 3：同步 main">Step 3：同步 main</a></li>
+            
+              <li><a class="toc__link toc__link--sub" href="#Step-4：创建功能分支" data-toc-id="Step-4：创建功能分支" title="Step 4：创建功能分支">Step 4：创建功能分支</a></li>
+            
+              <li><a class="toc__link toc__link--sub" href="#Step-5：修改代码并-Commit" data-toc-id="Step-5：修改代码并-Commit" title="Step 5：修改代码并 Commit">Step 5：修改代码并 Commit</a></li>
+            
+              <li><a class="toc__link toc__link--sub" href="#Step-6：Push-到自己的-Fork" data-toc-id="Step-6：Push-到自己的-Fork" title="Step 6：Push 到自己的 Fork">Step 6：Push 到自己的 Fork</a></li>
+            
+              <li><a class="toc__link toc__link--sub" href="#Step-7：创建-Pull-Request" data-toc-id="Step-7：创建-Pull-Request" title="Step 7：创建 Pull Request">Step 7：创建 Pull Request</a></li>
+            
+              <li><a class="toc__link toc__link--sub" href="#Step-8：根据-Review-修改" data-toc-id="Step-8：根据-Review-修改" title="Step 8：根据 Review 修改">Step 8：根据 Review 修改</a></li>
+            
+              <li><a class="toc__link toc__link--sub" href="#Step-9：作者-Merge" data-toc-id="Step-9：作者-Merge" title="Step 9：作者 Merge">Step 9：作者 Merge</a></li>
+            
+              <li><a class="toc__link toc__link--sub" href="#Step-10：重新同步-main" data-toc-id="Step-10：重新同步-main" title="Step 10：重新同步 main">Step 10：重新同步 main</a></li>
+            
+              <li><a class="toc__link toc__link--sub" href="#Step-11：删除已经完成的-Feature-Branch" data-toc-id="Step-11：删除已经完成的-Feature-Branch" title="Step 11：删除已经完成的 Feature Branch">Step 11：删除已经完成的 Feature Branch</a></li>
+            
+          </ol>
+        
+      </li>
+    
+      <li>
+        <a class="toc__link" href="#二十三、如果-PR-被拒绝，完整处理流程" data-toc-id="二十三、如果-PR-被拒绝，完整处理流程" title="二十三、如果 PR 被拒绝，完整处理流程">二十三、如果 PR 被拒绝，完整处理流程</a>
+        
+      </li>
+    
+      <li>
+        <a class="toc__link" href="#二十四、常用命令速查" data-toc-id="二十四、常用命令速查" title="二十四、常用命令速查">二十四、常用命令速查</a>
+        
+          <ol class="toc__list toc__list--sub">
+            
+              <li><a class="toc__link toc__link--sub" href="#查看远程仓库" data-toc-id="查看远程仓库" title="查看远程仓库">查看远程仓库</a></li>
+            
+              <li><a class="toc__link toc__link--sub" href="#添加-upstream" data-toc-id="添加-upstream" title="添加 upstream">添加 upstream</a></li>
+            
+              <li><a class="toc__link toc__link--sub" href="#获取-upstream-最新代码" data-toc-id="获取-upstream-最新代码" title="获取 upstream 最新代码">获取 upstream 最新代码</a></li>
+            
+              <li><a class="toc__link toc__link--sub" href="#同步-main" data-toc-id="同步-main" title="同步 main">同步 main</a></li>
+            
+              <li><a class="toc__link toc__link--sub" href="#创建-Feature-Branch" data-toc-id="创建-Feature-Branch" title="创建 Feature Branch">创建 Feature Branch</a></li>
+            
+              <li><a class="toc__link toc__link--sub" href="#提交代码" data-toc-id="提交代码" title="提交代码">提交代码</a></li>
+            
+              <li><a class="toc__link toc__link--sub" href="#第一次-Push-Feature-Branch" data-toc-id="第一次-Push-Feature-Branch" title="第一次 Push Feature Branch">第一次 Push Feature Branch</a></li>
+            
+              <li><a class="toc__link toc__link--sub" href="#后续更新-PR" data-toc-id="后续更新-PR" title="后续更新 PR">后续更新 PR</a></li>
+            
+              <li><a class="toc__link toc__link--sub" href="#Feature-同步-upstream：Merge" data-toc-id="Feature-同步-upstream：Merge" title="Feature 同步 upstream：Merge">Feature 同步 upstream：Merge</a></li>
+            
+              <li><a class="toc__link toc__link--sub" href="#Feature-同步-upstream：Rebase" data-toc-id="Feature-同步-upstream：Rebase" title="Feature 同步 upstream：Rebase">Feature 同步 upstream：Rebase</a></li>
+            
+              <li><a class="toc__link toc__link--sub" href="#删除本地-Feature-Branch" data-toc-id="删除本地-Feature-Branch" title="删除本地 Feature Branch">删除本地 Feature Branch</a></li>
+            
+              <li><a class="toc__link toc__link--sub" href="#删除远程-Feature-Branch" data-toc-id="删除远程-Feature-Branch" title="删除远程 Feature Branch">删除远程 Feature Branch</a></li>
+            
+          </ol>
+        
+      </li>
+    
+      <li>
+        <a class="toc__link" href="#二十五、最终需要建立的-Git-思维" data-toc-id="二十五、最终需要建立的-Git-思维" title="二十五、最终需要建立的 Git 思维">二十五、最终需要建立的 Git 思维</a>
+        
+      </li>
+    
+  </ol>
+</nav>
+
+
+  <div class="wrap prose" id="content"><p>在参与 GitHub 开源项目时，一个非常常见的工作流是：</p>
+<blockquote>
+<p><strong>Fork 别人的项目 → 修改代码 → 提交 Pull Request → 作者 Review → Merge 或 Reject → 继续同步原项目</strong></p>
+</blockquote>
+<span id="more"></span>
+
+<p>第一次接触这套流程时，很容易遇到一些问题：</p>
+<ul>
+<li>Fork 之后到底应该在哪个分支修改？</li>
+<li>Pull Request 被拒绝了，我写的代码会怎么样？</li>
+<li>作者只接受我的部分修改怎么办？</li>
+<li>PR 合并以后，我自己的 Fork 怎么处理？</li>
+<li>原作者继续更新项目后，我的 Fork 怎么同步？</li>
+<li>如果我的 Fork 已经有自己的修改，还能不能继续跟原项目保持同步？</li>
+<li><code>merge</code> 和 <code>rebase</code> 到底应该怎么选？</li>
+</ul>
+<p>这篇文章从头梳理一遍 GitHub Fork + Pull Request 的完整工作流。</p>
+<hr>
+<h2 id="一、先理解三个仓库：upstream、origin-和-local"><a href="#一、先理解三个仓库：upstream、origin-和-local" class="headerlink" title="一、先理解三个仓库：upstream、origin 和 local"></a>一、先理解三个仓库：upstream、origin 和 local</h2><p>假设 GitHub 上有一个开源项目：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">alice/project</span><br></pre></td></tr></table></figure>
+
+<p>我希望参与这个项目，于是在 GitHub 上点击 <strong>Fork</strong>。</p>
+<p>GitHub 会在我的账号下创建一份副本：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">alice/project</span><br><span class="line">     │</span><br><span class="line">     │ Fork</span><br><span class="line">     ▼</span><br><span class="line">pepper/project</span><br></pre></td></tr></table></figure>
+
+<p>然后，我再把自己的 Fork 克隆到电脑：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">alice/project</span><br><span class="line">     │</span><br><span class="line">     │ Fork</span><br><span class="line">     ▼</span><br><span class="line">pepper/project</span><br><span class="line">     │</span><br><span class="line">     │ git clone</span><br><span class="line">     ▼</span><br><span class="line">本地 project</span><br></pre></td></tr></table></figure>
+
+<p>因此整个开发过程中，其实存在三个仓库：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">① upstream</span><br><span class="line">   alice/project</span><br><span class="line">   原作者的仓库</span><br><span class="line"></span><br><span class="line">② origin</span><br><span class="line">   pepper/project</span><br><span class="line">   我 GitHub 账号下的 Fork</span><br><span class="line"></span><br><span class="line">③ local</span><br><span class="line">   我电脑上的本地 Git 仓库</span><br></pre></td></tr></table></figure>
+
+<p>这是理解整个 Pull Request 工作流最重要的基础。</p>
+<p>通常约定：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">origin   = 自己的 Fork</span><br><span class="line">upstream = 原作者的仓库</span><br></pre></td></tr></table></figure>
+
+<p>可以简单记成：</p>
+<blockquote>
+<p><strong>origin 是我的，upstream 是上游作者的。</strong></p>
+</blockquote>
+<hr>
+<h2 id="二、Fork-项目后的第一次配置"><a href="#二、Fork-项目后的第一次配置" class="headerlink" title="二、Fork 项目后的第一次配置"></a>二、Fork 项目后的第一次配置</h2><p>首先，在 GitHub 页面点击：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Fork</span><br></pre></td></tr></table></figure>
+
+<p>得到自己的仓库：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pepper/project</span><br></pre></td></tr></table></figure>
+
+<p>然后克隆自己的 Fork：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">git <span class="built_in">clone</span> git@github.com:pepper/project.git</span><br><span class="line"><span class="built_in">cd</span> project</span><br></pre></td></tr></table></figure>
+
+<p>此时执行：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git remote -v</span><br></pre></td></tr></table></figure>
+
+<p>通常只能看到：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">origin  git@github.com:pepper/project.git (fetch)</span><br><span class="line">origin  git@github.com:pepper/project.git (push)</span><br></pre></td></tr></table></figure>
+
+<p>因为 Git 目前只知道自己的 Fork 在哪里，并不知道原作者仓库在哪里。</p>
+<p>因此需要添加一个 <code>upstream</code>：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git remote add upstream https://github.com/alice/project.git</span><br></pre></td></tr></table></figure>
+
+<p>再次检查：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git remote -v</span><br></pre></td></tr></table></figure>
+
+<p>应该类似：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">origin    git@github.com:pepper/project.git (fetch)</span><br><span class="line">origin    git@github.com:pepper/project.git (push)</span><br><span class="line"></span><br><span class="line">upstream  https://github.com/alice/project.git (fetch)</span><br><span class="line">upstream  https://github.com/alice/project.git (push)</span><br></pre></td></tr></table></figure>
+
+<p>以后只需要记住：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">origin   → 我的 Fork</span><br><span class="line">upstream → 原作者仓库</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="三、最重要的原则：不要直接在-main-上开发"><a href="#三、最重要的原则：不要直接在-main-上开发" class="headerlink" title="三、最重要的原则：不要直接在 main 上开发"></a>三、最重要的原则：不要直接在 main 上开发</h2><p>这是整个工作流中最值得养成的习惯：</p>
+<blockquote>
+<p><strong>自己的 <code>main</code> 尽量永远与原作者的 <code>main</code> 保持一致。自己的功能修改全部放到单独的 branch。</strong></p>
+</blockquote>
+<p>假设准备增加：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">CSV 导出功能</span><br></pre></td></tr></table></figure>
+
+<p>不推荐：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">main</span><br><span class="line"> ↓</span><br><span class="line">修改代码</span><br><span class="line"> ↓</span><br><span class="line">commit</span><br><span class="line"> ↓</span><br><span class="line">提交 PR</span><br></pre></td></tr></table></figure>
+
+<p>更推荐：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">main</span><br><span class="line"> │</span><br><span class="line"> └── feature/csv-export</span><br><span class="line">          │</span><br><span class="line">          ├── 修改</span><br><span class="line">          ├── commit</span><br><span class="line">          └── Pull Request</span><br></pre></td></tr></table></figure>
+
+<p>首先切换到 <code>main</code>：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git switch main</span><br></pre></td></tr></table></figure>
+
+<p>获取原作者最新代码：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git fetch upstream</span><br></pre></td></tr></table></figure>
+
+<p>同步到本地：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git merge upstream/main</span><br></pre></td></tr></table></figure>
+
+<p>然后创建功能分支：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git switch -c feature/csv-export</span><br></pre></td></tr></table></figure>
+
+<p>此时提交历史可以理解成：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">A──B──C</span><br><span class="line">       \</span><br><span class="line">        D──E</span><br></pre></td></tr></table></figure>
+
+<p>其中：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">A B C = 原作者代码</span><br><span class="line">D E   = 我的修改</span><br></pre></td></tr></table></figure>
+
+<p>而：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">main                → C</span><br><span class="line">feature/csv-export  → E</span><br></pre></td></tr></table></figure>
+
+<p>这样 <code>main</code> 是干净的，而自己的功能独立存在。</p>
+<hr>
+<h2 id="四、修改完成后提交代码"><a href="#四、修改完成后提交代码" class="headerlink" title="四、修改完成后提交代码"></a>四、修改完成后提交代码</h2><p>修改完成后：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git status</span><br></pre></td></tr></table></figure>
+
+<p>查看发生了哪些变化。</p>
+<p>然后：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git add .</span><br></pre></td></tr></table></figure>
+
+<p>提交：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git commit -m <span class="string">&quot;feat: add CSV export support&quot;</span></span><br></pre></td></tr></table></figure>
+
+<p>接下来把功能分支推送到自己的 GitHub Fork：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git push -u origin feature/csv-export</span><br></pre></td></tr></table></figure>
+
+<p>此时 GitHub 上自己的仓库就有：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">pepper/project</span><br><span class="line"></span><br><span class="line">├── main</span><br><span class="line">└── feature/csv-export</span><br></pre></td></tr></table></figure>
+
+<p>注意，这一步只是：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">本地 feature/csv-export</span><br><span class="line">        │</span><br><span class="line">        │ git push</span><br><span class="line">        ▼</span><br><span class="line">自己的 GitHub Fork</span><br></pre></td></tr></table></figure>
+
+<p>代码还没有进入原作者的仓库。</p>
+<hr>
+<h2 id="五、创建-Pull-Request"><a href="#五、创建-Pull-Request" class="headerlink" title="五、创建 Pull Request"></a>五、创建 Pull Request</h2><p>Push 完成后，GitHub 通常会提示：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Compare &amp; pull request</span><br></pre></td></tr></table></figure>
+
+<p>点击以后，需要确认两个方向：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">base repository:</span><br><span class="line">alice/project</span><br><span class="line"></span><br><span class="line">base:</span><br><span class="line">main</span><br><span class="line"></span><br><span class="line">←</span><br><span class="line"></span><br><span class="line">head repository:</span><br><span class="line">pepper/project</span><br><span class="line"></span><br><span class="line">compare:</span><br><span class="line">feature/csv-export</span><br></pre></td></tr></table></figure>
+
+<p>它表达的意思是：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">pepper/project:feature/csv-export</span><br><span class="line">                │</span><br><span class="line">                │ Pull Request</span><br><span class="line">                ▼</span><br><span class="line">alice/project:main</span><br></pre></td></tr></table></figure>
+
+<p>也就是：</p>
+<blockquote>
+<p><strong>请求原作者把我的 <code>feature/csv-export</code> 修改合并进他的 <code>main</code>。</strong></p>
+</blockquote>
+<p>这就是 Pull Request，简称 PR。</p>
+<hr>
+<h2 id="六、Pull-Request-提交之后会发生什么？"><a href="#六、Pull-Request-提交之后会发生什么？" class="headerlink" title="六、Pull Request 提交之后会发生什么？"></a>六、Pull Request 提交之后会发生什么？</h2><p>作者可以对 PR 进行 Review。</p>
+<p>常见结果包括：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">Approve</span><br><span class="line">Request changes</span><br><span class="line">Comment</span><br><span class="line">Close</span><br><span class="line">Merge</span><br></pre></td></tr></table></figure>
+
+<p>实际开发中，大致可以分成下面几种情况。</p>
+<hr>
+<h2 id="七、情况一：作者完全接受-PR"><a href="#七、情况一：作者完全接受-PR" class="headerlink" title="七、情况一：作者完全接受 PR"></a>七、情况一：作者完全接受 PR</h2><p>假设原作者原来的代码是：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">A──B──C</span><br></pre></td></tr></table></figure>
+
+<p>我的功能分支增加：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">A──B──C──D──E──F</span><br></pre></td></tr></table></figure>
+
+<p>作者认为这些修改没有问题，于是：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Approve</span><br><span class="line">   ↓</span><br><span class="line">Merge</span><br></pre></td></tr></table></figure>
+
+<p>那么这些修改就会进入原作者的 <code>main</code>。</p>
+<p>概念上可以理解成：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">原来：</span><br><span class="line"></span><br><span class="line">A──B──C</span><br><span class="line"></span><br><span class="line">合并后：</span><br><span class="line"></span><br><span class="line">A──B──C──D──E──F</span><br></pre></td></tr></table></figure>
+
+<p>实际 Git 历史可能有所不同，因为 GitHub 支持：</p>
+<ul>
+<li>Create a merge commit</li>
+<li>Squash and merge</li>
+<li>Rebase and merge</li>
+</ul>
+<p>但从代码结果来看，你的贡献已经进入 upstream。</p>
+<hr>
+<h2 id="八、情况二：PR-被拒绝会怎么样？"><a href="#八、情况二：PR-被拒绝会怎么样？" class="headerlink" title="八、情况二：PR 被拒绝会怎么样？"></a>八、情况二：PR 被拒绝会怎么样？</h2><p>假设：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">upstream/main</span><br><span class="line"></span><br><span class="line">A──B──C</span><br></pre></td></tr></table></figure>
+
+<p>而我的分支：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">feature/csv-export</span><br><span class="line"></span><br><span class="line">A──B──C──D──E</span><br></pre></td></tr></table></figure>
+
+<p>提交 PR 后，作者认为这个功能不适合项目，于是关闭 PR：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Close Pull Request</span><br></pre></td></tr></table></figure>
+
+<p>这时候：</p>
+<blockquote>
+<p><strong>你的代码不会消失。</strong></p>
+</blockquote>
+<p>原作者还是：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">upstream/main</span><br><span class="line"></span><br><span class="line">A──B──C</span><br></pre></td></tr></table></figure>
+
+<p>而你的 Fork 仍然可以是：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">origin/main</span><br><span class="line"></span><br><span class="line">A──B──C</span><br></pre></td></tr></table></figure>
+
+<p>同时：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">origin/feature/csv-export</span><br><span class="line"></span><br><span class="line">A──B──C──D──E</span><br></pre></td></tr></table></figure>
+
+<p>所以：</p>
+<blockquote>
+<p><strong>PR 被拒绝，只代表作者没有把你的代码合并进他的项目，并不代表你的代码被删除。</strong></p>
+</blockquote>
+<p>你的 branch、commit 和代码都还属于你。</p>
+<hr>
+<h2 id="九、PR-被拒绝以后，不想要这些代码怎么办？"><a href="#九、PR-被拒绝以后，不想要这些代码怎么办？" class="headerlink" title="九、PR 被拒绝以后，不想要这些代码怎么办？"></a>九、PR 被拒绝以后，不想要这些代码怎么办？</h2><p>如果这个功能以后也不需要了，可以直接删除 branch。</p>
+<p>首先回到：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git switch main</span><br></pre></td></tr></table></figure>
+
+<p>删除本地分支：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git branch -d feature/csv-export</span><br></pre></td></tr></table></figure>
+
+<p>如果 Git 因为分支没有被合并而拒绝删除，可以强制删除：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git branch -D feature/csv-export</span><br></pre></td></tr></table></figure>
+
+<p>然后删除自己 GitHub Fork 上的远程分支：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git push origin --delete feature/csv-export</span><br></pre></td></tr></table></figure>
+
+<p>这样就恢复干净了。</p>
+<hr>
+<h2 id="十、如果-PR-被拒绝，但我自己还想继续用这个功能呢？"><a href="#十、如果-PR-被拒绝，但我自己还想继续用这个功能呢？" class="headerlink" title="十、如果 PR 被拒绝，但我自己还想继续用这个功能呢？"></a>十、如果 PR 被拒绝，但我自己还想继续用这个功能呢？</h2><p>那就什么都不用做。</p>
+<p>继续保留：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">feature/csv-export</span><br></pre></td></tr></table></figure>
+
+<p>即可。</p>
+<p>这也是 Fork 非常重要的意义之一。</p>
+<p>原作者可以维护：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">alice/project</span><br></pre></td></tr></table></figure>
+
+<p>而你完全可以维护自己的魔改版本：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pepper/project</span><br></pre></td></tr></table></figure>
+
+<p>两者不完全一致没有任何问题。</p>
+<hr>
+<h2 id="十一、作者只接受部分修改怎么办？"><a href="#十一、作者只接受部分修改怎么办？" class="headerlink" title="十一、作者只接受部分修改怎么办？"></a>十一、作者只接受部分修改怎么办？</h2><p>假设一个 PR 里包含：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">A 功能</span><br><span class="line">B 功能</span><br><span class="line">C 功能</span><br></pre></td></tr></table></figure>
+
+<p>作者 Review 后认为：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">A 👍</span><br><span class="line">B 👍</span><br><span class="line">C ❌</span><br></pre></td></tr></table></figure>
+
+<p>一般不是简单地在 GitHub 上把 C “切掉”，更常见的工作流是作者：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Request changes</span><br></pre></td></tr></table></figure>
+
+<p>然后告诉你：</p>
+<blockquote>
+<p>A、B 可以，但是请删除 C。</p>
+</blockquote>
+<p>这时候不需要关闭 PR，也不需要重新创建 PR。</p>
+<p>直接继续修改当前：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">feature/xxx</span><br></pre></td></tr></table></figure>
+
+<p>把 C 删除。</p>
+<p>然后：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">git add .</span><br><span class="line">git commit -m <span class="string">&quot;refactor: remove feature C based on review&quot;</span></span><br><span class="line">git push</span><br></pre></td></tr></table></figure>
+
+<p>因为 PR 跟踪的是这个 branch，所以：</p>
+<blockquote>
+<p><strong>继续向这个 branch push，原来的 PR 会自动更新。</strong></p>
+</blockquote>
+<p>于是 PR 最终可能只剩：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">A</span><br><span class="line">B</span><br></pre></td></tr></table></figure>
+
+<p>作者重新 Review：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Approve</span><br><span class="line">↓</span><br><span class="line">Merge</span><br></pre></td></tr></table></figure>
+
+<p>即可。</p>
+<hr>
+<h2 id="十二、原作者更新项目以后，我的-Fork-怎么同步？"><a href="#十二、原作者更新项目以后，我的-Fork-怎么同步？" class="headerlink" title="十二、原作者更新项目以后，我的 Fork 怎么同步？"></a>十二、原作者更新项目以后，我的 Fork 怎么同步？</h2><p>这是 Fork 项目以后最常见的操作之一。</p>
+<p>假设最初：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">upstream/main</span><br><span class="line"></span><br><span class="line">A──B──C</span><br></pre></td></tr></table></figure>
+
+<p>自己的 Fork：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">origin/main</span><br><span class="line"></span><br><span class="line">A──B──C</span><br></pre></td></tr></table></figure>
+
+<p>两边完全一致。</p>
+<p>后来作者继续开发：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">upstream/main</span><br><span class="line"></span><br><span class="line">A──B──C──D──E──F</span><br></pre></td></tr></table></figure>
+
+<p>但是自己的 Fork 还是：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">origin/main</span><br><span class="line"></span><br><span class="line">A──B──C</span><br></pre></td></tr></table></figure>
+
+<p>GitHub 此时可能显示：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">This branch is 3 commits behind</span><br></pre></td></tr></table></figure>
+
+<p>也就是说自己的 Fork 落后于 upstream。</p>
+<hr>
+<h2 id="十三、通过-Git-命令同步-upstream"><a href="#十三、通过-Git-命令同步-upstream" class="headerlink" title="十三、通过 Git 命令同步 upstream"></a>十三、通过 Git 命令同步 upstream</h2><p>首先切换到 <code>main</code>：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git switch main</span><br></pre></td></tr></table></figure>
+
+<p>获取原作者最新信息：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git fetch upstream</span><br></pre></td></tr></table></figure>
+
+<p>这里要特别注意：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git fetch upstream</span><br></pre></td></tr></table></figure>
+
+<p>并不会直接修改自己的 <code>main</code>。</p>
+<p>它只是告诉 Git：</p>
+<blockquote>
+<p>去 upstream 看一下有没有新东西，有的话下载回来。</p>
+</blockquote>
+<p>此时 Git 知道：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">upstream/main</span><br><span class="line"></span><br><span class="line">A──B──C──D──E──F</span><br></pre></td></tr></table></figure>
+
+<p>但是本地：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">main</span><br><span class="line"></span><br><span class="line">A──B──C</span><br></pre></td></tr></table></figure>
+
+<p>仍然没有变化。</p>
+<p>接下来：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git merge upstream/main</span><br></pre></td></tr></table></figure>
+
+<p>本地 <code>main</code> 就变成：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">A──B──C──D──E──F</span><br></pre></td></tr></table></figure>
+
+<p>最后：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git push origin main</span><br></pre></td></tr></table></figure>
+
+<p>把本地最新版同步到自己的 GitHub Fork。</p>
+<p>于是：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">upstream/main</span><br><span class="line">      =</span><br><span class="line">local main</span><br><span class="line">      =</span><br><span class="line">origin/main</span><br></pre></td></tr></table></figure>
+
+<p>重新保持一致。</p>
+<p>所以，日常同步 upstream 最值得记住的是这四条：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">git switch main</span><br><span class="line">git fetch upstream</span><br><span class="line">git merge upstream/main</span><br><span class="line">git push origin main</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="十四、也可以直接在-GitHub-网页同步-Fork"><a href="#十四、也可以直接在-GitHub-网页同步-Fork" class="headerlink" title="十四、也可以直接在 GitHub 网页同步 Fork"></a>十四、也可以直接在 GitHub 网页同步 Fork</h2><p>如果自己的 Fork 落后于原仓库，GitHub 通常会显示：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">This branch is X commits behind xxx:main</span><br></pre></td></tr></table></figure>
+
+<p>并提供：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Sync fork</span><br></pre></td></tr></table></figure>
+
+<p>点击：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Sync fork</span><br><span class="line">→</span><br><span class="line">Update branch</span><br></pre></td></tr></table></figure>
+
+<p>GitHub 就会帮助同步。</p>
+<p>如果只是单纯希望自己的 <code>main</code> 与原作者保持一致，而且自己的 <code>main</code> 没有什么魔改，那么这种方式非常方便。</p>
+<hr>
+<h2 id="十五、为什么不要直接修改自己的-main？"><a href="#十五、为什么不要直接修改自己的-main？" class="headerlink" title="十五、为什么不要直接修改自己的 main？"></a>十五、为什么不要直接修改自己的 main？</h2><p>现在就可以理解为什么前面一直强调：</p>
+<blockquote>
+<p><strong>main 尽量只用来同步 upstream。</strong></p>
+</blockquote>
+<p>假设：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">upstream/main</span><br><span class="line"></span><br><span class="line">A──B──C</span><br></pre></td></tr></table></figure>
+
+<p>你直接在自己的 <code>main</code> 修改：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">origin/main</span><br><span class="line"></span><br><span class="line">A──B──C──X──Y</span><br></pre></td></tr></table></figure>
+
+<p>后来作者又提交：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">upstream/main</span><br><span class="line"></span><br><span class="line">A──B──C──D──E</span><br></pre></td></tr></table></figure>
+
+<p>此时历史就出现分叉：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">          X──Y    ← 我的修改</span><br><span class="line">         /</span><br><span class="line">A──B──C</span><br><span class="line">         \</span><br><span class="line">          D──E    ← 作者的新修改</span><br></pre></td></tr></table></figure>
+
+<p>这时候再同步 upstream，就需要处理：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">merge</span><br></pre></td></tr></table></figure>
+
+<p>如果双方恰好修改了同一部分代码，还可能出现：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">merge conflict</span><br></pre></td></tr></table></figure>
+
+<p>随着时间越来越长，维护成本也会越来越高。</p>
+<hr>
+<h2 id="十六、正确方式：main-跟踪-upstream，功能放-branch"><a href="#十六、正确方式：main-跟踪-upstream，功能放-branch" class="headerlink" title="十六、正确方式：main 跟踪 upstream，功能放 branch"></a>十六、正确方式：main 跟踪 upstream，功能放 branch</h2><p>如果从一开始就创建独立分支：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">                 X──Y</span><br><span class="line">                /</span><br><span class="line">A──B──C────────</span><br><span class="line">       \</span><br><span class="line">        D──E</span><br></pre></td></tr></table></figure>
+
+<p>那么：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">X Y = 我的 feature</span><br><span class="line">D E = upstream 新更新</span><br></pre></td></tr></table></figure>
+
+<p>此时可以直接更新 <code>main</code>：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">git switch main</span><br><span class="line">git fetch upstream</span><br><span class="line">git merge upstream/main</span><br><span class="line">git push origin main</span><br></pre></td></tr></table></figure>
+
+<p>于是：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">main</span><br><span class="line"></span><br><span class="line">A──B──C──D──E</span><br></pre></td></tr></table></figure>
+
+<p>而自己的：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">feature/my-feature</span><br></pre></td></tr></table></figure>
+
+<p>仍然独立存在。</p>
+<p>两件事情互不干扰。</p>
+<hr>
+<h2 id="十七、正在开发-Feature-时，upstream-更新了怎么办？"><a href="#十七、正在开发-Feature-时，upstream-更新了怎么办？" class="headerlink" title="十七、正在开发 Feature 时，upstream 更新了怎么办？"></a>十七、正在开发 Feature 时，upstream 更新了怎么办？</h2><p>这是另一个非常常见的情况。</p>
+<p>假设开始开发时：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">A──B──C</span><br><span class="line">       \</span><br><span class="line">        X──Y</span><br></pre></td></tr></table></figure>
+
+<p>其中：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">X Y = 我的修改</span><br></pre></td></tr></table></figure>
+
+<p>但是在我开发过程中，原作者继续提交：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">A──B──C──D──E──F</span><br></pre></td></tr></table></figure>
+
+<p>现在可以理解成：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">              X──Y</span><br><span class="line">             /</span><br><span class="line">A──B──C</span><br><span class="line">       \</span><br><span class="line">        D──E──F</span><br></pre></td></tr></table></figure>
+
+<p>我希望自己的 Feature 也基于作者最新版开发。</p>
+<p>最终希望达到：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">A──B──C──D──E──F──X──Y</span><br></pre></td></tr></table></figure>
+
+<p>这时候主要有两种方法：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">merge</span><br></pre></td></tr></table></figure>
+
+<p>或者：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">rebase</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="十八、方法一：merge-upstream-main"><a href="#十八、方法一：merge-upstream-main" class="headerlink" title="十八、方法一：merge upstream&#x2F;main"></a>十八、方法一：merge upstream&#x2F;main</h2><p>首先：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git switch feature/my-feature</span><br></pre></td></tr></table></figure>
+
+<p>获取 upstream：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git fetch upstream</span><br></pre></td></tr></table></figure>
+
+<p>然后：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git merge upstream/main</span><br></pre></td></tr></table></figure>
+
+<p>历史可能变成：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">          X──Y────M</span><br><span class="line">         /       /</span><br><span class="line">A──B──C──D──E──F</span><br></pre></td></tr></table></figure>
+
+<p>其中：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">M = merge commit</span><br></pre></td></tr></table></figure>
+
+<p>这种方式的优点是：</p>
+<ul>
+<li>容易理解</li>
+<li>不改写已有 commit 历史</li>
+<li>相对安全</li>
+</ul>
+<p>缺点是：</p>
+<ul>
+<li>commit graph 可能比较复杂</li>
+<li>feature branch 可能出现很多 merge commit</li>
+</ul>
+<p>对于 Git 初学者，这通常是比较容易理解的方式。</p>
+<hr>
+<h2 id="十九、方法二：rebase-upstream-main"><a href="#十九、方法二：rebase-upstream-main" class="headerlink" title="十九、方法二：rebase upstream&#x2F;main"></a>十九、方法二：rebase upstream&#x2F;main</h2><p>另一种方式是：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">git switch feature/my-feature</span><br><span class="line">git fetch upstream</span><br><span class="line">git rebase upstream/main</span><br></pre></td></tr></table></figure>
+
+<p>原来的：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">              X──Y</span><br><span class="line">             /</span><br><span class="line">A──B──C</span><br><span class="line">       \</span><br><span class="line">        D──E──F</span><br></pre></td></tr></table></figure>
+
+<p>经过 rebase 后，可以理解成：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">A──B──C──D──E──F──X&#x27;──Y&#x27;</span><br></pre></td></tr></table></figure>
+
+<p>也就是说 Git 把自己的：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">X</span><br><span class="line">Y</span><br></pre></td></tr></table></figure>
+
+<p>重新放到了最新版：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">F</span><br></pre></td></tr></table></figure>
+
+<p>后面。</p>
+<p>可以把 rebase 理解成：</p>
+<blockquote>
+<p><strong>假装我当初就是从 upstream 最新版本开始写 X 和 Y 的。</strong></p>
+</blockquote>
+<p>因此历史会非常干净。</p>
+<hr>
+<h2 id="二十、为什么-rebase-后有时候要-Force-Push？"><a href="#二十、为什么-rebase-后有时候要-Force-Push？" class="headerlink" title="二十、为什么 rebase 后有时候要 Force Push？"></a>二十、为什么 rebase 后有时候要 Force Push？</h2><p>因为 rebase 会重新生成 commit。</p>
+<p>原来：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">X</span><br><span class="line">Y</span><br></pre></td></tr></table></figure>
+
+<p>rebase 后实际上变成：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">X&#x27;</span><br><span class="line">Y&#x27;</span><br></pre></td></tr></table></figure>
+
+<p>它们虽然可能包含类似的代码，但 Git commit hash 已经不同。</p>
+<p>所以如果之前已经：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git push origin feature/my-feature</span><br></pre></td></tr></table></figure>
+
+<p>rebase 后普通：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git push</span><br></pre></td></tr></table></figure>
+
+<p>可能会被 Git 拒绝。</p>
+<p>此时通常需要：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git push --force-with-lease</span><br></pre></td></tr></table></figure>
+
+<p>推荐使用：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">--force-with-lease</span><br></pre></td></tr></table></figure>
+
+<p>而不是直接：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">--force</span><br></pre></td></tr></table></figure>
+
+<p>因为前者会多做一层检查，相对更加安全。</p>
+<hr>
+<h2 id="二十一、完整-Pull-Request-工作流"><a href="#二十一、完整-Pull-Request-工作流" class="headerlink" title="二十一、完整 Pull Request 工作流"></a>二十一、完整 Pull Request 工作流</h2><p>整个过程可以总结为：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line">               GitHub</span><br><span class="line">                  │</span><br><span class="line">        ┌─────────┴─────────┐</span><br><span class="line">        │                   │</span><br><span class="line">    upstream             origin</span><br><span class="line">   原作者仓库            我的 Fork</span><br><span class="line">        │                   ↑</span><br><span class="line">        │                   │</span><br><span class="line">        └──────→ local ─────┘</span><br><span class="line">                   │</span><br><span class="line">                  main</span><br><span class="line">                   │</span><br><span class="line">        ┌──────────┼──────────┐</span><br><span class="line">        │          │          │</span><br><span class="line">        ▼          ▼          ▼</span><br><span class="line">    feature/A  feature/B   fix/bug</span><br><span class="line">        │</span><br><span class="line">        │</span><br><span class="line">        ▼</span><br><span class="line">   Pull Request</span><br><span class="line">        │</span><br><span class="line">  ┌─────┴─────┐</span><br><span class="line">  │           │</span><br><span class="line">  ▼           ▼</span><br><span class="line">Merge       Reject</span><br></pre></td></tr></table></figure>
+
+<p>其中最重要的是：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">upstream/main</span><br><span class="line">      │</span><br><span class="line">      ▼</span><br><span class="line">local main</span><br><span class="line">      │</span><br><span class="line">      ▼</span><br><span class="line">origin/main</span><br></pre></td></tr></table></figure>
+
+<p>尽量保持一致。</p>
+<p>而自己的工作：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">main</span><br><span class="line"> ├── feature/A</span><br><span class="line"> ├── feature/B</span><br><span class="line"> ├── fix/bug</span><br><span class="line"> └── docs/readme</span><br></pre></td></tr></table></figure>
+
+<p>全部独立开发。</p>
+<hr>
+<h2 id="二十二、一个完整的实战例子"><a href="#二十二、一个完整的实战例子" class="headerlink" title="二十二、一个完整的实战例子"></a>二十二、一个完整的实战例子</h2><p>假设我要给：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">github.com/alice/medical-ai</span><br></pre></td></tr></table></figure>
+
+<p>贡献代码。</p>
+<p>Fork 后，我自己的仓库是：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">github.com/pepper/medical-ai</span><br></pre></td></tr></table></figure>
+
+<h3 id="Step-1：Clone-自己的-Fork"><a href="#Step-1：Clone-自己的-Fork" class="headerlink" title="Step 1：Clone 自己的 Fork"></a>Step 1：Clone 自己的 Fork</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">git <span class="built_in">clone</span> git@github.com:pepper/medical-ai.git</span><br><span class="line"><span class="built_in">cd</span> medical-ai</span><br></pre></td></tr></table></figure>
+
+<h3 id="Step-2：添加-upstream"><a href="#Step-2：添加-upstream" class="headerlink" title="Step 2：添加 upstream"></a>Step 2：添加 upstream</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git remote add upstream https://github.com/alice/medical-ai.git</span><br></pre></td></tr></table></figure>
+
+<p>检查：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git remote -v</span><br></pre></td></tr></table></figure>
+
+<h3 id="Step-3：同步-main"><a href="#Step-3：同步-main" class="headerlink" title="Step 3：同步 main"></a>Step 3：同步 main</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">git switch main</span><br><span class="line">git fetch upstream</span><br><span class="line">git merge upstream/main</span><br><span class="line">git push origin main</span><br></pre></td></tr></table></figure>
+
+<h3 id="Step-4：创建功能分支"><a href="#Step-4：创建功能分支" class="headerlink" title="Step 4：创建功能分支"></a>Step 4：创建功能分支</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git switch -c feature/add-dicom-support</span><br></pre></td></tr></table></figure>
+
+<h3 id="Step-5：修改代码并-Commit"><a href="#Step-5：修改代码并-Commit" class="headerlink" title="Step 5：修改代码并 Commit"></a>Step 5：修改代码并 Commit</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">git add .</span><br><span class="line">git commit -m <span class="string">&quot;feat: add DICOM support&quot;</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="Step-6：Push-到自己的-Fork"><a href="#Step-6：Push-到自己的-Fork" class="headerlink" title="Step 6：Push 到自己的 Fork"></a>Step 6：Push 到自己的 Fork</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git push -u origin feature/add-dicom-support</span><br></pre></td></tr></table></figure>
+
+<h3 id="Step-7：创建-Pull-Request"><a href="#Step-7：创建-Pull-Request" class="headerlink" title="Step 7：创建 Pull Request"></a>Step 7：创建 Pull Request</h3><p>在 GitHub 创建：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">pepper/medical-ai:feature/add-dicom-support</span><br><span class="line">                    │</span><br><span class="line">                    ▼</span><br><span class="line">alice/medical-ai:main</span><br></pre></td></tr></table></figure>
+
+<h3 id="Step-8：根据-Review-修改"><a href="#Step-8：根据-Review-修改" class="headerlink" title="Step 8：根据 Review 修改"></a>Step 8：根据 Review 修改</h3><p>如果作者提出修改意见：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 修改代码</span></span><br><span class="line"></span><br><span class="line">git add .</span><br><span class="line">git commit -m <span class="string">&quot;fix: address PR review comments&quot;</span></span><br><span class="line">git push</span><br></pre></td></tr></table></figure>
+
+<p>原来的 PR 会自动更新。</p>
+<h3 id="Step-9：作者-Merge"><a href="#Step-9：作者-Merge" class="headerlink" title="Step 9：作者 Merge"></a>Step 9：作者 Merge</h3><p>作者：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Approve</span><br><span class="line">↓</span><br><span class="line">Merge</span><br></pre></td></tr></table></figure>
+
+<p>代码进入 upstream。</p>
+<h3 id="Step-10：重新同步-main"><a href="#Step-10：重新同步-main" class="headerlink" title="Step 10：重新同步 main"></a>Step 10：重新同步 main</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">git switch main</span><br><span class="line">git fetch upstream</span><br><span class="line">git merge upstream/main</span><br><span class="line">git push origin main</span><br></pre></td></tr></table></figure>
+
+<h3 id="Step-11：删除已经完成的-Feature-Branch"><a href="#Step-11：删除已经完成的-Feature-Branch" class="headerlink" title="Step 11：删除已经完成的 Feature Branch"></a>Step 11：删除已经完成的 Feature Branch</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">git branch -d feature/add-dicom-support</span><br><span class="line">git push origin --delete feature/add-dicom-support</span><br></pre></td></tr></table></figure>
+
+<p>最终重新回到：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">upstream/main</span><br><span class="line">      =</span><br><span class="line">local main</span><br><span class="line">      =</span><br><span class="line">origin/main</span><br></pre></td></tr></table></figure>
+
+<p>整个工作区重新变得干净。</p>
+<hr>
+<h2 id="二十三、如果-PR-被拒绝，完整处理流程"><a href="#二十三、如果-PR-被拒绝，完整处理流程" class="headerlink" title="二十三、如果 PR 被拒绝，完整处理流程"></a>二十三、如果 PR 被拒绝，完整处理流程</h2><p>如果作者关闭 PR：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Pull Request</span><br><span class="line">     ↓</span><br><span class="line">   Closed</span><br></pre></td></tr></table></figure>
+
+<p>原作者的代码没有变化。</p>
+<p>首先同步自己的 <code>main</code>：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">git switch main</span><br><span class="line">git fetch upstream</span><br><span class="line">git merge upstream/main</span><br><span class="line">git push origin main</span><br></pre></td></tr></table></figure>
+
+<p>如果这个 Feature 自己也不要了：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">git branch -D feature/add-dicom-support</span><br><span class="line">git push origin --delete feature/add-dicom-support</span><br></pre></td></tr></table></figure>
+
+<p>如果自己还需要这个功能，那么直接保留：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">feature/add-dicom-support</span><br></pre></td></tr></table></figure>
+
+<p>即可。</p>
+<p>它不会影响 <code>main</code> 继续跟踪 upstream。</p>
+<hr>
+<h2 id="二十四、常用命令速查"><a href="#二十四、常用命令速查" class="headerlink" title="二十四、常用命令速查"></a>二十四、常用命令速查</h2><h3 id="查看远程仓库"><a href="#查看远程仓库" class="headerlink" title="查看远程仓库"></a>查看远程仓库</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git remote -v</span><br></pre></td></tr></table></figure>
+
+<h3 id="添加-upstream"><a href="#添加-upstream" class="headerlink" title="添加 upstream"></a>添加 upstream</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git remote add upstream https://github.com/作者/项目.git</span><br></pre></td></tr></table></figure>
+
+<h3 id="获取-upstream-最新代码"><a href="#获取-upstream-最新代码" class="headerlink" title="获取 upstream 最新代码"></a>获取 upstream 最新代码</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git fetch upstream</span><br></pre></td></tr></table></figure>
+
+<h3 id="同步-main"><a href="#同步-main" class="headerlink" title="同步 main"></a>同步 main</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">git switch main</span><br><span class="line">git fetch upstream</span><br><span class="line">git merge upstream/main</span><br><span class="line">git push origin main</span><br></pre></td></tr></table></figure>
+
+<h3 id="创建-Feature-Branch"><a href="#创建-Feature-Branch" class="headerlink" title="创建 Feature Branch"></a>创建 Feature Branch</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git switch -c feature/xxx</span><br></pre></td></tr></table></figure>
+
+<h3 id="提交代码"><a href="#提交代码" class="headerlink" title="提交代码"></a>提交代码</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">git add .</span><br><span class="line">git commit -m <span class="string">&quot;feat: xxx&quot;</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="第一次-Push-Feature-Branch"><a href="#第一次-Push-Feature-Branch" class="headerlink" title="第一次 Push Feature Branch"></a>第一次 Push Feature Branch</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git push -u origin feature/xxx</span><br></pre></td></tr></table></figure>
+
+<h3 id="后续更新-PR"><a href="#后续更新-PR" class="headerlink" title="后续更新 PR"></a>后续更新 PR</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">git add .</span><br><span class="line">git commit -m <span class="string">&quot;fix: address review comments&quot;</span></span><br><span class="line">git push</span><br></pre></td></tr></table></figure>
+
+<h3 id="Feature-同步-upstream：Merge"><a href="#Feature-同步-upstream：Merge" class="headerlink" title="Feature 同步 upstream：Merge"></a>Feature 同步 upstream：Merge</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">git switch feature/xxx</span><br><span class="line">git fetch upstream</span><br><span class="line">git merge upstream/main</span><br></pre></td></tr></table></figure>
+
+<h3 id="Feature-同步-upstream：Rebase"><a href="#Feature-同步-upstream：Rebase" class="headerlink" title="Feature 同步 upstream：Rebase"></a>Feature 同步 upstream：Rebase</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">git switch feature/xxx</span><br><span class="line">git fetch upstream</span><br><span class="line">git rebase upstream/main</span><br></pre></td></tr></table></figure>
+
+<p>如果已经 Push：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git push --force-with-lease</span><br></pre></td></tr></table></figure>
+
+<h3 id="删除本地-Feature-Branch"><a href="#删除本地-Feature-Branch" class="headerlink" title="删除本地 Feature Branch"></a>删除本地 Feature Branch</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git branch -d feature/xxx</span><br></pre></td></tr></table></figure>
+
+<p>强制删除：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git branch -D feature/xxx</span><br></pre></td></tr></table></figure>
+
+<h3 id="删除远程-Feature-Branch"><a href="#删除远程-Feature-Branch" class="headerlink" title="删除远程 Feature Branch"></a>删除远程 Feature Branch</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git push origin --delete feature/xxx</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="二十五、最终需要建立的-Git-思维"><a href="#二十五、最终需要建立的-Git-思维" class="headerlink" title="二十五、最终需要建立的 Git 思维"></a>二十五、最终需要建立的 Git 思维</h2><p>如果只记住一条原则，那么就是：</p>
+<blockquote>
+<p><strong>main 用来追踪原作者，branch 用来保存自己的工作，Pull Request 用来把 branch 的修改贡献给原作者。</strong></p>
+</blockquote>
+<p>理想状态下：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">upstream/main</span><br><span class="line">      │</span><br><span class="line">      │ sync</span><br><span class="line">      ▼</span><br><span class="line">local main</span><br><span class="line">      │</span><br><span class="line">      │ push</span><br><span class="line">      ▼</span><br><span class="line">origin/main</span><br></pre></td></tr></table></figure>
+
+<p>而开发过程则是：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">main</span><br><span class="line"> │</span><br><span class="line"> ├── feature/A ──→ PR</span><br><span class="line"> │</span><br><span class="line"> ├── feature/B ──→ PR</span><br><span class="line"> │</span><br><span class="line"> ├── fix/bug ────→ PR</span><br><span class="line"> │</span><br><span class="line"> └── docs/readme ─→ PR</span><br></pre></td></tr></table></figure>
+
+<p>这样做最大的好处是：</p>
+<ol>
+<li><code>main</code> 始终保持干净；</li>
+<li>upstream 更新后很容易同步；</li>
+<li>每一个功能互不干扰；</li>
+<li>PR 被拒绝不会影响其他工作；</li>
+<li>PR 被接受后可以直接删除对应 branch；</li>
+<li>可以同时维护多个 PR；</li>
+<li>即使自己的 Fork 长期存在，也不容易和 upstream 搞乱。</li>
+</ol>
+<p>因此，一个比较成熟的 GitHub Fork 工作流可以概括成：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line">Fork</span><br><span class="line">  ↓</span><br><span class="line">Clone</span><br><span class="line">  ↓</span><br><span class="line">添加 upstream</span><br><span class="line">  ↓</span><br><span class="line">同步 main</span><br><span class="line">  ↓</span><br><span class="line">创建 feature branch</span><br><span class="line">  ↓</span><br><span class="line">修改代码</span><br><span class="line">  ↓</span><br><span class="line">Commit</span><br><span class="line">  ↓</span><br><span class="line">Push 到 origin</span><br><span class="line">  ↓</span><br><span class="line">创建 Pull Request</span><br><span class="line">  ↓</span><br><span class="line">根据 Review 继续修改</span><br><span class="line">  ↓</span><br><span class="line">Merge / Reject</span><br><span class="line">  ↓</span><br><span class="line">重新同步 main</span><br><span class="line">  ↓</span><br><span class="line">删除或保留 feature branch</span><br><span class="line">  ↓</span><br><span class="line">下一轮开发</span><br></pre></td></tr></table></figure>
+
+<p>一旦把 <strong>upstream、origin、main、feature branch、Pull Request</strong> 这五个概念理清楚，GitHub 上绝大多数开源项目的日常贡献流程就已经基本掌握了。</p>
+</div>
+
+  <footer class="wrap post__foot">
+    
+      <div class="post__tags">
+        <a class="pill pill--link" href="/tags/Git/">Git</a><a class="pill pill--link" href="/tags/GitHub/">GitHub</a><a class="pill pill--link" href="/tags/Pull-Request/">Pull Request</a><a class="pill pill--link" href="/tags/Fork/">Fork</a><a class="pill pill--link" href="/tags/%E5%BC%80%E6%BA%90%E5%8D%8F%E4%BD%9C/">开源协作</a><a class="pill pill--link" href="/tags/%E7%89%88%E6%9C%AC%E6%8E%A7%E5%88%B6/">版本控制</a>
+      </div>
+    
+
+    
+
+    
+<section class="related" aria-label="相关文章">
+  <p class="related__label">相关文章</p>
+  <ul class="related__list">
+    
+      <li>
+        <a class="related__link" href="/2020/05/github-action-hexo/">
+          <span class="related__title">利用 GitHub Action 部署 Hexo 博客<span class="item__arrow" aria-hidden="true">→</span></span>
+          <time class="related__date" datetime="2020-05-24T10:44:00.000Z">2020-05-24</time>
+        </a>
+      </li>
+    
+      <li>
+        <a class="related__link" href="/2019/09/gitee-hexo/">
+          <span class="related__title">在码云上利用 Hexo 搭建博客<span class="item__arrow" aria-hidden="true">→</span></span>
+          <time class="related__date" datetime="2019-09-21T18:12:00.000Z">2019-09-22</time>
+        </a>
+      </li>
+    
+      <li>
+        <a class="related__link" href="/2026/08/compress-pdf-with-python/">
+          <span class="related__title">使用 Python 质量压缩 PDF<span class="item__arrow" aria-hidden="true">→</span></span>
+          <time class="related__date" datetime="2026-08-21T04:00:00.000Z">2026-08-21</time>
+        </a>
+      </li>
+    
+  </ul>
+</section>
+
+
+    
+      <nav class="nextprev" aria-label="归档">
+        
+          <a class="nextprev__card" href="/2026/08/compress-pdf-with-python/" rel="prev">
+            <span class="nextprev__label"><span aria-hidden="true">←</span> 上一篇</span>
+            <span class="nextprev__title">使用 Python 质量压缩 PDF</span>
+          </a>
+        
+
+        
+          <a class="nextprev__card nextprev__card--r" href="/2024/09/mongorestore/" rel="next">
+            <span class="nextprev__label">下一篇 <span aria-hidden="true">→</span></span>
+            <span class="nextprev__title">使用 mongorestore 恢复 MongoDB 集合</span>
+          </a>
+        
+      </nav>
+    
+  </footer>
+</article>
+
+
+
+
+
+</main>
+
+  
+<footer class="foot">
+  <div class="wrap foot__in">
+    <div class="foot__left">
+      
+      <p class="foot__copy">© 2026 辣椒小皇纸</p>
+    </div>
+
+    <div class="foot__right">
+      
+        <a class="foot__link" href="https://github.com/suhuang64" target="_blank" rel="noopener noreferrer">GitHub</a>
+      
+      
+    </div>
+  </div>
+</footer>
+
+
+  
+    <button class="totop" id="totop" type="button" aria-label="回到顶部">
+      <svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true" focusable="false">
+        <path d="M8 3.6l5.2 5.2-1.1 1.1L8.8 6.8V13h-1.6V6.8L3.9 9.9 2.8 8.8z" fill="currentColor"/>
+      </svg>
+    </button>
+  
+
+  
+    
+<div class="shortcuts" id="shortcuts" aria-hidden="true">
+  <p class="shortcuts__label">快捷键</p>
+  <ul class="shortcuts__list">
+    <li><kbd>Shift</kbd><span>+</span><kbd>T</kbd><span class="shortcuts__text">切换主题</span></li>
+    <li><kbd>Shift</kbd><span>+</span><kbd>H</kbd><span class="shortcuts__text">回到首页</span></li>
+    <li><kbd>Shift</kbd><span>+</span><kbd>R</kbd><span class="shortcuts__text">随机文章</span></li>
+  </ul>
+</div>
+
+  
+
+  
+    <script type="application/json" id="post-index">["/2019/09/linux-screen/","/2019/09/linux-dst-server/","/2019/09/ubuntu-sudo-no-password/","/2019/09/gitee-hexo/","/2019/11/windows-dst-server/","/2019/11/diy-dst-cmd/","/dst/","/2019/11/dst-nickname/","/2020/02/dst-wx78/","/2020/03/aria2-h5ai/","/2020/05/github-action-hexo/","/2020/08/python-mail/","/2020/08/openvpn","/2020/09/sublime-text-date-time/","/2023/08/sklearn-paramenter-tune/","/2020/08/frp/","/2020/07/r-mice/","/2023/08/sklearn-regression-algorithm/","/2026/08/compress-pdf-with-python/","/2024/09/mongorestore/","/2026/08/github-pull-request/"]</script>
+  
+
+  <script src="/js/main.js" defer></script>
+</body>
+</html>

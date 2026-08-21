@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+
+  
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#fcfcfb" media="(prefers-color-scheme: light)" id="tc-light">
+  <meta name="theme-color" content="#171715" media="(prefers-color-scheme: dark)" id="tc-dark">
+
+  <script>
+    (function () {
+      var root = document.documentElement;
+      var key  = 'idyll-theme';
+
+      root.classList.add('js');
+
+      var saved = null;
+      try { saved = localStorage.getItem(key); } catch (err) {}
+
+      var tcLight = document.getElementById('tc-light');
+      var tcDark  = document.getElementById('tc-dark');
+      var colors  = { light: '#fcfcfb', dark: '#171715' };
+
+      function syncChrome(mode) {
+        if (tcLight && tcDark) {
+          var c = colors[mode] || null;
+          tcLight.content = c || '#fcfcfb';
+          tcDark.content  = c || '#171715';
+        }
+      }
+
+      if (saved === 'light' || saved === 'dark') {
+        root.setAttribute('data-theme', saved);
+        syncChrome(saved);
+      }
+
+      function wire() {
+        var btn = document.getElementById('theme');
+        if (!btn) return;
+
+        var state = document.getElementById('theme-state');
+
+        function paint(mode) {
+          if (mode) root.setAttribute('data-theme', mode);
+          else root.removeAttribute('data-theme');
+
+          if (state) state.textContent = btn.getAttribute('data-' + (mode || 'auto'));
+
+          syncChrome(mode);
+
+          try {
+            if (mode) localStorage.setItem(key, mode);
+            else localStorage.removeItem(key);
+          } catch (err) {}
+
+          
+          document.dispatchEvent(new CustomEvent('idyll:theme', { detail: mode || 'auto' }));
+        }
+
+        btn.addEventListener('click', function () {
+          var cur     = root.getAttribute('data-theme') || '';
+          var sysDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+          if (cur === '') paint(sysDark ? 'light' : 'dark');
+          else if (cur === 'light') paint('dark');
+          else paint('');
+        });
+
+        paint(root.getAttribute('data-theme') || '');
+      }
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', wire);
+      } else {
+        wire();
+      }
+    })();
+  </script>
+
+  <title>Scikit-Learn 回归算法概述 · 辣椒手记</title>
+  <meta name="description" content="在机器学习领域，回归分析是一个核心的话题，它的目的是预测一个连续的输出值基于一个或多个输入特征。回归方法有着广泛的应用，从预测股票价格、房地产市场的评估，到天气预测等。尽管有各种各样的回归算法可以选择，但每种方法都有其独特的优势和局限性。本文将简要介绍几种流行的回归方法，包括线性回归、岭回归、Las…">
+  <meta name="author" content="辣椒小皇纸">
+  
+
+  <meta name="description" content="在机器学习领域，回归分析是一个核心的话题，它的目的是预测一个连续的输出值基于一个或多个输入特征。回归方法有着广泛的应用，从预测股票价格、房地产市场的评估，到天气预测等。尽管有各种各样的回归算法可以选择，但每种方法都有其独特的优势和局限性。本文将简要介绍几种流行的回归方法，包括线性回归、岭回归、Las…">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Scikit-Learn 回归算法概述 · 辣椒手记">
+<meta property="og:url" content="https://peppernotes.top/2023/08/sklearn-regression-algorithm/index.html">
+<meta property="og:site_name" content="辣椒手记">
+<meta property="og:description" content="在机器学习领域，回归分析是一个核心的话题，它的目的是预测一个连续的输出值基于一个或多个输入特征。回归方法有着广泛的应用，从预测股票价格、房地产市场的评估，到天气预测等。尽管有各种各样的回归算法可以选择，但每种方法都有其独特的优势和局限性。本文将简要介绍几种流行的回归方法，包括线性回归、岭回归、Las…">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2023-08-11T15:53:00.000Z">
+<meta property="article:modified_time" content="2023-08-11T15:53:00.000Z">
+<meta property="article:author" content="辣椒小皇纸">
+<meta property="article:tag" content="Python">
+<meta property="article:tag" content="Scikit-Learn">
+<meta property="article:tag" content="回归分析">
+<meta property="article:tag" content="回归算法">
+<meta property="article:tag" content="机器学习">
+<meta property="article:tag" content="模型训练">
+<meta name="twitter:card" content="summary">
+  
+  <link rel="canonical" href="https://peppernotes.top/2023/08/sklearn-regression-algorithm/">
+  <link rel="icon" href="/images/favicon.svg" type="image/svg+xml">
+  
+
+  <link rel="stylesheet" href="/css/style.css">
+  
+
+<meta name="generator" content="Hexo 8.1.2"></head>
+
+<body data-idyll="copy anchor ext toc shortcut"
+      data-copy="复制"
+      data-copied="已复制"
+      data-copyfail="请按 Ctrl+C"
+      data-anchor="链接到这一节">
+
+  
+    <div class="progress" id="progress" aria-hidden="true"><i></i></div>
+  
+
+  <a class="skip" href="#main">跳到正文</a>
+
+  <header class="nav" id="nav">
+  <div class="wrap nav__in">
+    <a class="nav__brand" href="/">
+      <span class="nav__mark" aria-hidden="true"></span>
+      <span class="nav__name">辣椒手记</span>
+    </a>
+
+    <div class="nav__right">
+      <nav class="nav__links" aria-label="站点导航">
+        
+          <a class="nav__link"
+             href="/">首页</a>
+        
+          <a class="nav__link"
+             href="/archives/">归档</a>
+        
+          <a class="nav__link"
+             href="/categories/">分类</a>
+        
+          <a class="nav__link"
+             href="/tags/">标签</a>
+        
+          <a class="nav__link"
+             href="/series/">系列</a>
+        
+          <a class="nav__link"
+             href="/about/">关于</a>
+        
+      </nav>
+
+      
+        
+        <button class="theme" id="theme" type="button"
+                data-auto="跟随系统"
+                data-light="亮色"
+                data-dark="暗色">
+          <svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true" focusable="false">
+            <g class="theme__ico theme__ico--auto">
+              <circle cx="8" cy="8" r="5.6" fill="none" stroke="currentColor" stroke-width="1.4"/>
+              <path d="M8 2.4a5.6 5.6 0 0 0 0 11.2z" fill="currentColor"/>
+            </g>
+            <g class="theme__ico theme__ico--light"
+               fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round">
+              <circle cx="8" cy="8" r="3.1"/>
+              <path d="M8 1.3v1.3M8 13.4v1.3M14.7 8h-1.3M2.6 8H1.3M12.74 3.26l-.92.92M4.18 11.82l-.92.92M12.74 12.74l-.92-.92M4.18 4.18l-.92-.92"/>
+            </g>
+            <g class="theme__ico theme__ico--dark">
+              <path d="M14 8.53A6 6 0 1 1 7.47 2 4.67 4.67 0 0 0 14 8.53z"
+                    fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
+            </g>
+          </svg>
+          
+          <span class="sr-only" id="theme-state" aria-live="polite">跟随系统</span>
+        </button>
+      
+    </div>
+  </div>
+</header>
+
+
+  <main class="main" id="main">
+
+<article class="post">
+  <header class="wrap post__head">
+    
+      <p class="post__kicker">
+        <a href="/categories/%E6%95%B0%E6%8D%AE%E7%A7%91%E5%AD%A6/">数据科学</a><span class="sep">/</span><a href="/categories/%E6%95%B0%E6%8D%AE%E7%A7%91%E5%AD%A6/%E6%9C%BA%E5%99%A8%E5%AD%A6%E4%B9%A0/">机器学习</a>
+      </p>
+    
+
+    <h1 class="post__title">Scikit-Learn 回归算法概述</h1>
+
+    <div class="post__meta">
+      
+      <time datetime="2023-08-11T15:53:00.000Z"><span class="sr-only">发布于 </span>2023-08-11</time>
+      
+        <span class="dot" aria-hidden="true">·</span>
+        <span>3,139 字</span>
+      
+      
+        <span class="dot" aria-hidden="true">·</span>
+        <span>10 分钟</span>
+      
+      
+    </div>
+  </header>
+
+  
+<nav class="toc" aria-label="目录">
+  <p class="toc__label">目录</p>
+  <ol class="toc__list">
+    
+      <li>
+        <a class="toc__link" href="#1-线性回归（Linear-Regression）" data-toc-id="1-线性回归（Linear-Regression）" title="1. 线性回归（Linear Regression）">1. 线性回归（Linear Regression）</a>
+        
+      </li>
+    
+      <li>
+        <a class="toc__link" href="#2-岭回归（Ridge-Regression）" data-toc-id="2-岭回归（Ridge-Regression）" title="2. 岭回归（Ridge Regression）">2. 岭回归（Ridge Regression）</a>
+        
+      </li>
+    
+      <li>
+        <a class="toc__link" href="#3-Lasso回归（Lasso-Regression）" data-toc-id="3-Lasso回归（Lasso-Regression）" title="3. Lasso回归（Lasso Regression）">3. Lasso回归（Lasso Regression）</a>
+        
+      </li>
+    
+      <li>
+        <a class="toc__link" href="#4-多项式回归（Polynomial-Regression）" data-toc-id="4-多项式回归（Polynomial-Regression）" title="4. 多项式回归（Polynomial Regression）">4. 多项式回归（Polynomial Regression）</a>
+        
+      </li>
+    
+      <li>
+        <a class="toc__link" href="#5-决策树回归（Decision-Tree-Regression）" data-toc-id="5-决策树回归（Decision-Tree-Regression）" title="5. 决策树回归（Decision Tree Regression）">5. 决策树回归（Decision Tree Regression）</a>
+        
+      </li>
+    
+      <li>
+        <a class="toc__link" href="#6-随机森林回归（Random-Forest-Regression）" data-toc-id="6-随机森林回归（Random-Forest-Regression）" title="6. 随机森林回归（Random Forest Regression）">6. 随机森林回归（Random Forest Regression）</a>
+        
+      </li>
+    
+      <li>
+        <a class="toc__link" href="#7-梯度提升回归（Gradient-Boosting-Regression）" data-toc-id="7-梯度提升回归（Gradient-Boosting-Regression）" title="7. 梯度提升回归（Gradient Boosting Regression）">7. 梯度提升回归（Gradient Boosting Regression）</a>
+        
+      </li>
+    
+      <li>
+        <a class="toc__link" href="#8-支持向量回归（Support-Vector-Regression）" data-toc-id="8-支持向量回归（Support-Vector-Regression）" title="8. 支持向量回归（Support Vector Regression）">8. 支持向量回归（Support Vector Regression）</a>
+        
+      </li>
+    
+      <li>
+        <a class="toc__link" href="#9-最近邻回归（K-Nearest-Neighbors-Regression）" data-toc-id="9-最近邻回归（K-Nearest-Neighbors-Regression）" title="9. 最近邻回归（K-Nearest Neighbors Regression）">9. 最近邻回归（K-Nearest Neighbors Regression）</a>
+        
+      </li>
+    
+      <li>
+        <a class="toc__link" href="#10-神经网络回归（Neural-Network-Regression，或-MLP-Regression）" data-toc-id="10-神经网络回归（Neural-Network-Regression，或-MLP-Regression）" title="10. 神经网络回归（Neural Network Regression，或 MLP Regression）">10. 神经网络回归（Neural Network Regression，或 MLP Regression）</a>
+        
+      </li>
+    
+      <li>
+        <a class="toc__link" href="#总结" data-toc-id="总结" title="总结">总结</a>
+        
+      </li>
+    
+  </ol>
+</nav>
+
+
+  <div class="wrap prose" id="content"><p>在机器学习领域，回归分析是一个核心的话题，它的目的是预测一个连续的输出值基于一个或多个输入特征。回归方法有着广泛的应用，从预测股票价格、房地产市场的评估，到天气预测等。尽管有各种各样的回归算法可以选择，但每种方法都有其独特的优势和局限性。本文将简要介绍几种流行的回归方法，包括线性回归、岭回归、Lasso回归、多项式回归、决策树回归、随机森林回归、梯度提升回归、支持向量回归、K-近邻回归，以及神经网络回归。通过详细的代码示例，读者可以更深入地了解每种方法的工作原理和实际应用。</p>
+<span id="more"></span>
+
+<p>Scikit-Learn（sklearn）是一个流行的机器学习库，它包含大量的回归算法。这些算法可用于预测数字目标变量。以下是一些主要的 sklearn 回归算法：</p>
+<ol>
+<li><strong>线性回归（Linear Regression）</strong>：最简单的回归方法，通过在数据中找到最佳拟合直线（对于一维输入）或超平面（对于多维输入）来建立预测模型。</li>
+<li><strong>岭回归（Ridge Regression）</strong>：这是线性回归的一个扩展，它包括一个L2正则化项，可以帮助防止过拟合。</li>
+<li><strong>Lasso回归（Lasso Regression）</strong>：另一个线性回归的扩展，它包括一个L1正则化项，这可以导致稀疏解，其中一些特征的权重将被设定为零。</li>
+<li><strong>弹性网（Elastic Net）</strong>：这是一种结合了岭回归和Lasso回归的方法，它包括L1和L2两种类型的正则化项。</li>
+<li><strong>多项式回归（Polynomial Regression）</strong>：这是线性回归的扩展，它允许模型在输入特征的高次幂上进行拟合，从而能够捕获数据中的非线性关系。</li>
+<li><strong>决策树回归（Decision Tree Regression）</strong>：使用决策树模型进行预测的方法。它可以捕获复杂的非线性关系，并且具有解释性强的特点。</li>
+<li><strong>随机森林回归（Random Forest Regression）</strong>：这是一种集成方法，它结合了多个决策树回归模型的预测结果。</li>
+<li><strong>梯度提升回归（Gradient Boosting Regression）</strong>：另一种集成方法，它通过顺序地添加新的决策树，每一步都尝试纠正前一步的错误。</li>
+<li><strong>支持向量回归（Support Vector Regression）</strong>：这是支持向量机的回归版本，它试图在预测误差在某个阈值内的同时，最大化特征空间中的间隔。</li>
+<li><strong>最近邻回归（K-Nearest Neighbors Regression）</strong>：预测新数据点的目标值是通过查找训练集中最接近它的数据点并平均其目标值来进行的。</li>
+<li><strong>神经网络回归（Neural Network Regression，或 MLP Regression）</strong>：这种方法使用神经网络模型进行预测，能够处理更复杂的非线性关系。</li>
+</ol>
+<h2 id="1-线性回归（Linear-Regression）"><a href="#1-线性回归（Linear-Regression）" class="headerlink" title="1. 线性回归（Linear Regression）"></a>1. 线性回归（Linear Regression）</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 引入所需要的库</span></span><br><span class="line"><span class="keyword">from</span> sklearn.model_selection <span class="keyword">import</span> train_test_split</span><br><span class="line"><span class="keyword">from</span> sklearn.linear_model <span class="keyword">import</span> LinearRegression</span><br><span class="line"><span class="keyword">from</span> sklearn <span class="keyword">import</span> datasets</span><br><span class="line"></span><br><span class="line"><span class="comment"># 生成一些随机的回归数据</span></span><br><span class="line">X, y = datasets.make_regression(n_samples=<span class="number">100</span>, n_features=<span class="number">1</span>, noise=<span class="number">0.1</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 划分数据为训练集和测试集</span></span><br><span class="line">X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=<span class="number">0.2</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 初始化线性回归模型</span></span><br><span class="line">model = LinearRegression()</span><br><span class="line"></span><br><span class="line"><span class="comment"># 使用训练数据对模型进行拟合</span></span><br><span class="line">model.fit(X_train, y_train)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 在测试集上进行预测</span></span><br><span class="line">predictions = model.predict(X_test)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 输出预测的结果</span></span><br><span class="line"><span class="built_in">print</span>(predictions)</span><br></pre></td></tr></table></figure>
+
+<h2 id="2-岭回归（Ridge-Regression）"><a href="#2-岭回归（Ridge-Regression）" class="headerlink" title="2. 岭回归（Ridge Regression）"></a>2. 岭回归（Ridge Regression）</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 引入所需要的库</span></span><br><span class="line"><span class="keyword">from</span> sklearn.model_selection <span class="keyword">import</span> train_test_split</span><br><span class="line"><span class="keyword">from</span> sklearn.linear_model <span class="keyword">import</span> Ridge</span><br><span class="line"><span class="keyword">from</span> sklearn <span class="keyword">import</span> datasets</span><br><span class="line"></span><br><span class="line"><span class="comment"># 生成一些随机的回归数据</span></span><br><span class="line">X, y = datasets.make_regression(n_samples=<span class="number">100</span>, n_features=<span class="number">1</span>, noise=<span class="number">0.1</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 划分数据为训练集和测试集</span></span><br><span class="line">X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=<span class="number">0.2</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 初始化岭回归模型</span></span><br><span class="line">model = Ridge(alpha=<span class="number">1.0</span>)  <span class="comment"># alpha 参数控制正则化的强度</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 使用训练数据对模型进行拟合</span></span><br><span class="line">model.fit(X_train, y_train)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 在测试集上进行预测</span></span><br><span class="line">predictions = model.predict(X_test)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 输出预测的结果</span></span><br><span class="line"><span class="built_in">print</span>(predictions)</span><br></pre></td></tr></table></figure>
+
+<p>这段代码与线性回归的示例相似，区别在于这里我们用的是 <code>Ridge</code> 而不是 <code>LinearRegression</code>。<code>Ridge</code> 接受一个 <code>alpha</code> 参数，这个参数控制正则化的强度，也就是避免过拟合的程度。</p>
+<h2 id="3-Lasso回归（Lasso-Regression）"><a href="#3-Lasso回归（Lasso-Regression）" class="headerlink" title="3. Lasso回归（Lasso Regression）"></a>3. Lasso回归（Lasso Regression）</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 引入所需要的库</span></span><br><span class="line"><span class="keyword">from</span> sklearn.model_selection <span class="keyword">import</span> train_test_split</span><br><span class="line"><span class="keyword">from</span> sklearn.linear_model <span class="keyword">import</span> Lasso</span><br><span class="line"><span class="keyword">from</span> sklearn.preprocessing <span class="keyword">import</span> MinMaxScaler</span><br><span class="line"><span class="keyword">from</span> sklearn <span class="keyword">import</span> datasets</span><br><span class="line"></span><br><span class="line"><span class="comment"># 生成一些随机的回归数据</span></span><br><span class="line">X, y = datasets.make_regression(n_samples=<span class="number">100</span>, n_features=<span class="number">1</span>, noise=<span class="number">0.1</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 划分数据为训练集和测试集</span></span><br><span class="line">X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=<span class="number">0.2</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 初始化MinMaxScaler</span></span><br><span class="line">scaler = MinMaxScaler()</span><br><span class="line"></span><br><span class="line"><span class="comment"># 使用训练集数据拟合scaler，并对训练集和测试集数据进行转换</span></span><br><span class="line">X_train_scaled = scaler.fit_transform(X_train)</span><br><span class="line">X_test_scaled = scaler.transform(X_test)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 初始化Lasso回归模型</span></span><br><span class="line">model = Lasso(alpha=<span class="number">1.0</span>)  <span class="comment"># alpha 参数控制正则化的强度</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 使用训练数据对模型进行拟合</span></span><br><span class="line">model.fit(X_train_scaled, y_train)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 在测试集上进行预测</span></span><br><span class="line">predictions = model.predict(X_test_scaled)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 输出预测的结果</span></span><br><span class="line"><span class="built_in">print</span>(predictions)</span><br></pre></td></tr></table></figure>
+
+<p>这段代码与上述岭回归的示例非常相似，只是我们使用了 <code>Lasso</code> 类而不是 <code>Ridge</code> 类。和岭回归一样，<code>Lasso</code> 也接受一个 <code>alpha</code> 参数，这个参数控制正则化的强度。</p>
+<h2 id="4-多项式回归（Polynomial-Regression）"><a href="#4-多项式回归（Polynomial-Regression）" class="headerlink" title="4. 多项式回归（Polynomial Regression）"></a>4. 多项式回归（Polynomial Regression）</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 引入所需要的库</span></span><br><span class="line"><span class="keyword">from</span> sklearn.model_selection <span class="keyword">import</span> train_test_split</span><br><span class="line"><span class="keyword">from</span> sklearn.linear_model <span class="keyword">import</span> LinearRegression</span><br><span class="line"><span class="keyword">from</span> sklearn.preprocessing <span class="keyword">import</span> PolynomialFeatures, FunctionTransformer</span><br><span class="line"><span class="keyword">from</span> sklearn.pipeline <span class="keyword">import</span> FeatureUnion</span><br><span class="line"><span class="keyword">from</span> sklearn <span class="keyword">import</span> datasets</span><br><span class="line"><span class="keyword">import</span> numpy <span class="keyword">as</span> np</span><br><span class="line"></span><br><span class="line"><span class="comment"># 生成一些随机的回归数据</span></span><br><span class="line">X, y = datasets.make_regression(n_samples=<span class="number">100</span>, n_features=<span class="number">1</span>, noise=<span class="number">0.1</span>, random_state=<span class="number">42</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 划分数据为训练集和测试集</span></span><br><span class="line">X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=<span class="number">0.2</span>, random_state=<span class="number">42</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 初始化线性回归模型</span></span><br><span class="line">model = LinearRegression()</span><br><span class="line"></span><br><span class="line"><span class="comment"># 创建并拟合各种多项式特征</span></span><br><span class="line">combined_features = FeatureUnion([(<span class="string">&quot;poly_features_1&quot;</span>, PolynomialFeatures(<span class="number">1</span>)),</span><br><span class="line">                                  (<span class="string">&quot;poly_features_2&quot;</span>, PolynomialFeatures(<span class="number">2</span>)),</span><br><span class="line">                                  (<span class="string">&quot;poly_features_3&quot;</span>, PolynomialFeatures(<span class="number">3</span>))])</span><br><span class="line"></span><br><span class="line">X_train_combined = combined_features.fit_transform(X_train)</span><br><span class="line">X_test_combined = combined_features.transform(X_test)</span><br><span class="line"></span><br><span class="line">model.fit(X_train_combined, y_train)</span><br><span class="line">predictions = model.predict(X_test_combined)</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&quot;Combined polynomial regression predictions: <span class="subst">&#123;predictions&#125;</span>&quot;</span>)</span><br></pre></td></tr></table></figure>
+
+<h2 id="5-决策树回归（Decision-Tree-Regression）"><a href="#5-决策树回归（Decision-Tree-Regression）" class="headerlink" title="5. 决策树回归（Decision Tree Regression）"></a>5. 决策树回归（Decision Tree Regression）</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 引入所需要的库</span></span><br><span class="line"><span class="keyword">from</span> sklearn.model_selection <span class="keyword">import</span> train_test_split</span><br><span class="line"><span class="keyword">from</span> sklearn.tree <span class="keyword">import</span> DecisionTreeRegressor</span><br><span class="line"><span class="keyword">from</span> sklearn.preprocessing <span class="keyword">import</span> MinMaxScaler</span><br><span class="line"><span class="keyword">from</span> sklearn <span class="keyword">import</span> datasets</span><br><span class="line"></span><br><span class="line"><span class="comment"># 生成一些随机的回归数据</span></span><br><span class="line">X, y = datasets.make_regression(n_samples=<span class="number">100</span>, n_features=<span class="number">1</span>, noise=<span class="number">0.1</span>, random_state=<span class="number">42</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 划分数据为训练集和测试集</span></span><br><span class="line">X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=<span class="number">0.2</span>, random_state=<span class="number">42</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 使用MinMaxScaler来缩放数据</span></span><br><span class="line">scaler = MinMaxScaler()</span><br><span class="line">X_train_scaled = scaler.fit_transform(X_train)</span><br><span class="line">X_test_scaled = scaler.transform(X_test)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 初始化并训练决策树回归模型</span></span><br><span class="line">tree_reg = DecisionTreeRegressor(random_state=<span class="number">42</span>)</span><br><span class="line">tree_reg.fit(X_train_scaled, y_train)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 预测测试数据</span></span><br><span class="line">predictions = tree_reg.predict(X_test_scaled)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&quot;Decision tree regression predictions: <span class="subst">&#123;predictions&#125;</span>&quot;</span>)</span><br></pre></td></tr></table></figure>
+
+<h2 id="6-随机森林回归（Random-Forest-Regression）"><a href="#6-随机森林回归（Random-Forest-Regression）" class="headerlink" title="6. 随机森林回归（Random Forest Regression）"></a>6. 随机森林回归（Random Forest Regression）</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 引入所需要的库</span></span><br><span class="line"><span class="keyword">from</span> sklearn.model_selection <span class="keyword">import</span> train_test_split</span><br><span class="line"><span class="keyword">from</span> sklearn.ensemble <span class="keyword">import</span> RandomForestRegressor</span><br><span class="line"><span class="keyword">from</span> sklearn.preprocessing <span class="keyword">import</span> MinMaxScaler</span><br><span class="line"><span class="keyword">from</span> sklearn <span class="keyword">import</span> datasets</span><br><span class="line"></span><br><span class="line"><span class="comment"># 生成一些随机的回归数据</span></span><br><span class="line">X, y = datasets.make_regression(n_samples=<span class="number">100</span>, n_features=<span class="number">1</span>, noise=<span class="number">0.1</span>, random_state=<span class="number">42</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 划分数据为训练集和测试集</span></span><br><span class="line">X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=<span class="number">0.2</span>, random_state=<span class="number">42</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 使用MinMaxScaler来缩放数据</span></span><br><span class="line">scaler = MinMaxScaler()</span><br><span class="line">X_train_scaled = scaler.fit_transform(X_train)</span><br><span class="line">X_test_scaled = scaler.transform(X_test)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 初始化并训练随机森林回归模型</span></span><br><span class="line">rf_reg = RandomForestRegressor(n_estimators=<span class="number">100</span>, random_state=<span class="number">42</span>)</span><br><span class="line">rf_reg.fit(X_train_scaled, y_train)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 预测测试数据</span></span><br><span class="line">predictions = rf_reg.predict(X_test_scaled)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&quot;Random forest regression predictions: <span class="subst">&#123;predictions&#125;</span>&quot;</span>)</span><br></pre></td></tr></table></figure>
+
+<h2 id="7-梯度提升回归（Gradient-Boosting-Regression）"><a href="#7-梯度提升回归（Gradient-Boosting-Regression）" class="headerlink" title="7. 梯度提升回归（Gradient Boosting Regression）"></a>7. 梯度提升回归（Gradient Boosting Regression）</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 引入所需要的库</span></span><br><span class="line"><span class="keyword">from</span> sklearn.model_selection <span class="keyword">import</span> train_test_split</span><br><span class="line"><span class="keyword">from</span> sklearn.ensemble <span class="keyword">import</span> GradientBoostingRegressor</span><br><span class="line"><span class="keyword">from</span> sklearn.preprocessing <span class="keyword">import</span> MinMaxScaler</span><br><span class="line"><span class="keyword">from</span> sklearn <span class="keyword">import</span> datasets</span><br><span class="line"></span><br><span class="line"><span class="comment"># 生成一些随机的回归数据</span></span><br><span class="line">X, y = datasets.make_regression(n_samples=<span class="number">100</span>, n_features=<span class="number">1</span>, noise=<span class="number">0.1</span>, random_state=<span class="number">42</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 划分数据为训练集和测试集</span></span><br><span class="line">X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=<span class="number">0.2</span>, random_state=<span class="number">42</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 使用MinMaxScaler来缩放数据</span></span><br><span class="line">scaler = MinMaxScaler()</span><br><span class="line">X_train_scaled = scaler.fit_transform(X_train)</span><br><span class="line">X_test_scaled = scaler.transform(X_test)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 初始化并训练梯度提升回归模型</span></span><br><span class="line">gb_reg = GradientBoostingRegressor(n_estimators=<span class="number">100</span>, learning_rate=<span class="number">0.1</span>, max_depth=<span class="number">1</span>, random_state=<span class="number">42</span>)</span><br><span class="line">gb_reg.fit(X_train_scaled, y_train)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 预测测试数据</span></span><br><span class="line">predictions = gb_reg.predict(X_test_scaled)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&quot;Gradient boosting regression predictions: <span class="subst">&#123;predictions&#125;</span>&quot;</span>)</span><br></pre></td></tr></table></figure>
+
+<p>梯度提升是一个强大的集成方法，它结合了多个弱预测模型（通常是决策树），以提高预测精度。通过逐步添加新模型，梯度提升方法试图纠正前一个模型的错误。在这个示例中，我们使用了100个决策树模型，学习率设置为0.1，树的最大深度为1。这些参数都可以根据你的具体问题进行调整。</p>
+<h2 id="8-支持向量回归（Support-Vector-Regression）"><a href="#8-支持向量回归（Support-Vector-Regression）" class="headerlink" title="8. 支持向量回归（Support Vector Regression）"></a>8. 支持向量回归（Support Vector Regression）</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 引入所需要的库</span></span><br><span class="line"><span class="keyword">from</span> sklearn.model_selection <span class="keyword">import</span> train_test_split</span><br><span class="line"><span class="keyword">from</span> sklearn.svm <span class="keyword">import</span> SVR</span><br><span class="line"><span class="keyword">from</span> sklearn.preprocessing <span class="keyword">import</span> MinMaxScaler</span><br><span class="line"><span class="keyword">from</span> sklearn <span class="keyword">import</span> datasets</span><br><span class="line"></span><br><span class="line"><span class="comment"># 生成一些随机的回归数据</span></span><br><span class="line">X, y = datasets.make_regression(n_samples=<span class="number">100</span>, n_features=<span class="number">1</span>, noise=<span class="number">0.1</span>, random_state=<span class="number">42</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 划分数据为训练集和测试集</span></span><br><span class="line">X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=<span class="number">0.2</span>, random_state=<span class="number">42</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 使用MinMaxScaler来缩放数据</span></span><br><span class="line">scaler = MinMaxScaler()</span><br><span class="line">X_train_scaled = scaler.fit_transform(X_train)</span><br><span class="line">X_test_scaled = scaler.transform(X_test)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 初始化并训练支持向量回归模型</span></span><br><span class="line">svr_reg = SVR(kernel=<span class="string">&#x27;rbf&#x27;</span>, C=<span class="number">1.0</span>, epsilon=<span class="number">0.1</span>)</span><br><span class="line">svr_reg.fit(X_train_scaled, y_train)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 预测测试数据</span></span><br><span class="line">predictions = svr_reg.predict(X_test_scaled)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&quot;Support vector regression predictions: <span class="subst">&#123;predictions&#125;</span>&quot;</span>)</span><br></pre></td></tr></table></figure>
+
+<p>支持向量回归是一种强大的回归方法，它使用支持向量机（SVM）的原理来解决回归问题。在这个示例中，我们使用了径向基函数（rbf）作为核函数，惩罚系数（C）设置为1.0，损失函数的ε-insensitive zone参数为0.1。这些参数都可以根据你的具体问题进行调整。</p>
+<h2 id="9-最近邻回归（K-Nearest-Neighbors-Regression）"><a href="#9-最近邻回归（K-Nearest-Neighbors-Regression）" class="headerlink" title="9. 最近邻回归（K-Nearest Neighbors Regression）"></a>9. 最近邻回归（K-Nearest Neighbors Regression）</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 引入所需要的库</span></span><br><span class="line"><span class="keyword">from</span> sklearn.model_selection <span class="keyword">import</span> train_test_split</span><br><span class="line"><span class="keyword">from</span> sklearn.neighbors <span class="keyword">import</span> KNeighborsRegressor</span><br><span class="line"><span class="keyword">from</span> sklearn.preprocessing <span class="keyword">import</span> MinMaxScaler</span><br><span class="line"><span class="keyword">from</span> sklearn <span class="keyword">import</span> datasets</span><br><span class="line"></span><br><span class="line"><span class="comment"># 生成一些随机的回归数据</span></span><br><span class="line">X, y = datasets.make_regression(n_samples=<span class="number">100</span>, n_features=<span class="number">1</span>, noise=<span class="number">0.1</span>, random_state=<span class="number">42</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 划分数据为训练集和测试集</span></span><br><span class="line">X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=<span class="number">0.2</span>, random_state=<span class="number">42</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 使用MinMaxScaler来缩放数据</span></span><br><span class="line">scaler = MinMaxScaler()</span><br><span class="line">X_train_scaled = scaler.fit_transform(X_train)</span><br><span class="line">X_test_scaled = scaler.transform(X_test)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 初始化并训练K-近邻回归模型</span></span><br><span class="line">knn_reg = KNeighborsRegressor(n_neighbors=<span class="number">5</span>)</span><br><span class="line">knn_reg.fit(X_train_scaled, y_train)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 预测测试数据</span></span><br><span class="line">predictions = knn_reg.predict(X_test_scaled)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&quot;K-nearest neighbors regression predictions: <span class="subst">&#123;predictions&#125;</span>&quot;</span>)</span><br></pre></td></tr></table></figure>
+
+<p>K-近邻回归是一种基于实例的学习方法，它在预测新实例时考虑了其最近的 <code>k</code> 个邻居。这个示例中，我们设置 <code>k</code>（<code>n_neighbors</code> 参数）为5，这意味着模型在进行预测时会考虑最近的5个邻居的平均值。这个参数可以根据你的具体问题进行调整。</p>
+<h2 id="10-神经网络回归（Neural-Network-Regression，或-MLP-Regression）"><a href="#10-神经网络回归（Neural-Network-Regression，或-MLP-Regression）" class="headerlink" title="10. 神经网络回归（Neural Network Regression，或 MLP Regression）"></a>10. 神经网络回归（Neural Network Regression，或 MLP Regression）</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 引入所需要的库</span></span><br><span class="line"><span class="keyword">from</span> sklearn.model_selection <span class="keyword">import</span> train_test_split</span><br><span class="line"><span class="keyword">from</span> sklearn.neural_network <span class="keyword">import</span> MLPRegressor</span><br><span class="line"><span class="keyword">from</span> sklearn.preprocessing <span class="keyword">import</span> MinMaxScaler</span><br><span class="line"><span class="keyword">from</span> sklearn <span class="keyword">import</span> datasets</span><br><span class="line"></span><br><span class="line"><span class="comment"># 生成一些随机的回归数据</span></span><br><span class="line">X, y = datasets.make_regression(n_samples=<span class="number">100</span>, n_features=<span class="number">1</span>, noise=<span class="number">0.1</span>, random_state=<span class="number">42</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 划分数据为训练集和测试集</span></span><br><span class="line">X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=<span class="number">0.2</span>, random_state=<span class="number">42</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 使用MinMaxScaler来缩放数据</span></span><br><span class="line">scaler = MinMaxScaler()</span><br><span class="line">X_train_scaled = scaler.fit_transform(X_train)</span><br><span class="line">X_test_scaled = scaler.transform(X_test)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 初始化并训练神经网络回归模型</span></span><br><span class="line">mlp_reg = MLPRegressor(hidden_layer_sizes=(<span class="number">10</span>, ), activation=<span class="string">&#x27;relu&#x27;</span>, solver=<span class="string">&#x27;adam&#x27;</span>, max_iter=<span class="number">500</span>, random_state=<span class="number">42</span>)</span><br><span class="line">mlp_reg.fit(X_train_scaled, y_train)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 预测测试数据</span></span><br><span class="line">predictions = mlp_reg.predict(X_test_scaled)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&quot;Neural network regression predictions: <span class="subst">&#123;predictions&#125;</span>&quot;</span>)</span><br></pre></td></tr></table></figure>
+
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>回归分析是机器学习中的一个强大工具，无论是对于简单的线性关系，还是复杂的非线性模式，都有合适的算法可供选择。本文提供了各种回归方法的基本介绍和实现示例，帮助读者理解和比较它们的特点和应用场景。当然，选择最合适的回归方法应考虑实际问题的需求、数据的性质以及模型的解释性。而在实际应用中，经常需要进一步的参数调优、特征选择和工程实践，以确保模型的最佳性能。希望本文为读者提供了一个扎实的起点，从而深入探索和应用这些强大的回归工具。</p>
+</div>
+
+  <footer class="wrap post__foot">
+    
+      <div class="post__tags">
+        <a class="pill pill--link" href="/tags/Python/">Python</a><a class="pill pill--link" href="/tags/Scikit-Learn/">Scikit-Learn</a><a class="pill pill--link" href="/tags/%E6%9C%BA%E5%99%A8%E5%AD%A6%E4%B9%A0/">机器学习</a><a class="pill pill--link" href="/tags/%E5%9B%9E%E5%BD%92%E5%88%86%E6%9E%90/">回归分析</a><a class="pill pill--link" href="/tags/%E5%9B%9E%E5%BD%92%E7%AE%97%E6%B3%95/">回归算法</a><a class="pill pill--link" href="/tags/%E6%A8%A1%E5%9E%8B%E8%AE%AD%E7%BB%83/">模型训练</a>
+      </div>
+    
+
+    
+
+    
+<section class="related" aria-label="相关文章">
+  <p class="related__label">相关文章</p>
+  <ul class="related__list">
+    
+      <li>
+        <a class="related__link" href="/2023/08/sklearn-paramenter-tune/">
+          <span class="related__title">Scikit-Learn 参数调优和评估<span class="item__arrow" aria-hidden="true">→</span></span>
+          <time class="related__date" datetime="2023-08-11T16:06:00.000Z">2023-08-12</time>
+        </a>
+      </li>
+    
+      <li>
+        <a class="related__link" href="/2026/08/compress-pdf-with-python/">
+          <span class="related__title">使用 Python 质量压缩 PDF<span class="item__arrow" aria-hidden="true">→</span></span>
+          <time class="related__date" datetime="2026-08-21T04:00:00.000Z">2026-08-21</time>
+        </a>
+      </li>
+    
+      <li>
+        <a class="related__link" href="/2020/09/sublime-text-date-time/">
+          <span class="related__title">Sublime Text 3 插入当前日期及时间<span class="item__arrow" aria-hidden="true">→</span></span>
+          <time class="related__date" datetime="2020-09-08T16:09:04.000Z">2020-09-09</time>
+        </a>
+      </li>
+    
+  </ul>
+</section>
+
+
+    
+      <nav class="nextprev" aria-label="归档">
+        
+          <a class="nextprev__card" href="/2023/08/sklearn-paramenter-tune/" rel="prev">
+            <span class="nextprev__label"><span aria-hidden="true">←</span> 上一篇</span>
+            <span class="nextprev__title">Scikit-Learn 参数调优和评估</span>
+          </a>
+        
+
+        
+          <a class="nextprev__card nextprev__card--r" href="/2020/09/sublime-text-date-time/" rel="next">
+            <span class="nextprev__label">下一篇 <span aria-hidden="true">→</span></span>
+            <span class="nextprev__title">Sublime Text 3 插入当前日期及时间</span>
+          </a>
+        
+      </nav>
+    
+  </footer>
+</article>
+
+
+
+
+
+</main>
+
+  
+<footer class="foot">
+  <div class="wrap foot__in">
+    <div class="foot__left">
+      
+      <p class="foot__copy">© 2026 辣椒小皇纸</p>
+    </div>
+
+    <div class="foot__right">
+      
+        <a class="foot__link" href="https://github.com/suhuang64" target="_blank" rel="noopener noreferrer">GitHub</a>
+      
+      
+    </div>
+  </div>
+</footer>
+
+
+  
+    <button class="totop" id="totop" type="button" aria-label="回到顶部">
+      <svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true" focusable="false">
+        <path d="M8 3.6l5.2 5.2-1.1 1.1L8.8 6.8V13h-1.6V6.8L3.9 9.9 2.8 8.8z" fill="currentColor"/>
+      </svg>
+    </button>
+  
+
+  
+    
+<div class="shortcuts" id="shortcuts" aria-hidden="true">
+  <p class="shortcuts__label">快捷键</p>
+  <ul class="shortcuts__list">
+    <li><kbd>Shift</kbd><span>+</span><kbd>T</kbd><span class="shortcuts__text">切换主题</span></li>
+    <li><kbd>Shift</kbd><span>+</span><kbd>H</kbd><span class="shortcuts__text">回到首页</span></li>
+    <li><kbd>Shift</kbd><span>+</span><kbd>R</kbd><span class="shortcuts__text">随机文章</span></li>
+  </ul>
+</div>
+
+  
+
+  
+    <script type="application/json" id="post-index">["/2019/09/linux-screen/","/2019/09/linux-dst-server/","/2019/09/ubuntu-sudo-no-password/","/2019/09/gitee-hexo/","/2019/11/windows-dst-server/","/2019/11/diy-dst-cmd/","/dst/","/2019/11/dst-nickname/","/2020/02/dst-wx78/","/2020/03/aria2-h5ai/","/2020/05/github-action-hexo/","/2020/08/python-mail/","/2020/08/openvpn","/2020/09/sublime-text-date-time/","/2023/08/sklearn-paramenter-tune/","/2020/08/frp/","/2020/07/r-mice/","/2023/08/sklearn-regression-algorithm/","/2026/08/compress-pdf-with-python/","/2024/09/mongorestore/","/2026/08/github-pull-request/"]</script>
+  
+
+  <script src="/js/main.js" defer></script>
+</body>
+</html>
