@@ -335,7 +335,7 @@
   <footer class="wrap post__foot">
     
       <div class="post__tags">
-        <a class="pill pill--link" href="/tags/Linux/">Linux</a><a class="pill pill--link" href="/tags/%E9%A5%A5%E8%8D%92%E8%81%94%E6%9C%BA%E7%89%88/">饥荒联机版</a><a class="pill pill--link" href="/tags/OpenVPN/">OpenVPN</a><a class="pill pill--link" href="/tags/VPN/">VPN</a><a class="pill pill--link" href="/tags/%E7%BD%91%E7%BB%9C%E5%8A%A0%E9%80%9F/">网络加速</a><a class="pill pill--link" href="/tags/%E6%9C%8D%E5%8A%A1%E5%99%A8/">服务器</a>
+        <a class="pill pill--link" href="/tags/%E9%A5%A5%E8%8D%92%E8%81%94%E6%9C%BA%E7%89%88/">饥荒联机版</a><a class="pill pill--link" href="/tags/Linux/">Linux</a><a class="pill pill--link" href="/tags/OpenVPN/">OpenVPN</a><a class="pill pill--link" href="/tags/VPN/">VPN</a><a class="pill pill--link" href="/tags/%E7%BD%91%E7%BB%9C%E5%8A%A0%E9%80%9F/">网络加速</a><a class="pill pill--link" href="/tags/%E6%9C%8D%E5%8A%A1%E5%99%A8/">服务器</a>
       </div>
     
 
@@ -437,7 +437,7 @@
   
 
   
-    <script type="application/json" id="post-index">["/2019/09/linux-screen/","/2019/09/linux-dst-server/","/2019/09/ubuntu-sudo-no-password/","/2019/09/gitee-hexo/","/dst/","/2019/11/windows-dst-server/","/2019/11/dst-nickname/","/2019/11/diy-dst-cmd/","/2020/02/dst-wx78/","/2020/03/aria2-h5ai/","/2020/05/github-action-hexo/","/2020/07/r-mice/","/2020/08/python-mail/","/2020/08/openvpn","/2020/08/frp/","/2020/09/sublime-text-date-time/","/2023/08/sklearn-regression-algorithm/","/2023/08/sklearn-paramenter-tune/","/2024/09/mongorestore/","/2026/08/github-pull-request/","/2026/08/compress-pdf-with-python/","/2026/08/han-tuo-zhou-shi-mi-yuan/","/2026/08/han-tu-zhou/","/2026/09/vscode-git-diff-contrast/"]</script>
+    <script type="application/json" id="post-index">["/2019/09/linux-dst-server/","/2019/09/ubuntu-sudo-no-password/","/2019/09/linux-screen/","/dst/","/2019/11/windows-dst-server/","/2019/09/gitee-hexo/","/2019/11/diy-dst-cmd/","/2020/03/aria2-h5ai/","/2020/05/github-action-hexo/","/2020/07/r-mice/","/2020/08/openvpn","/2020/08/python-mail/","/2020/09/sublime-text-date-time/","/2020/08/frp/","/2019/11/dst-nickname/","/2023/08/sklearn-paramenter-tune/","/2020/02/dst-wx78/","/2024/09/mongorestore/","/2026/08/compress-pdf-with-python/","/2023/08/sklearn-regression-algorithm/","/2026/08/han-tuo-zhou-shi-mi-yuan/","/2026/08/han-tu-zhou/","/2026/09/vscode-git-diff-contrast/","/2026/08/github-pull-request/"]</script>
   
 
   <script src="/js/main.js" defer></script>
