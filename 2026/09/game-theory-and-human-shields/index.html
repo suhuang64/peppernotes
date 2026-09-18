@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+
+  
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#fcfcfb" media="(prefers-color-scheme: light)" id="tc-light">
+  <meta name="theme-color" content="#171715" media="(prefers-color-scheme: dark)" id="tc-dark">
+
+  <script>
+    (function () {
+      var root = document.documentElement;
+      var key  = 'idyll-theme';
+
+      root.classList.add('js');
+
+      var saved = null;
+      try { saved = localStorage.getItem(key); } catch (err) {}
+
+      var tcLight = document.getElementById('tc-light');
+      var tcDark  = document.getElementById('tc-dark');
+      var colors  = { light: '#fcfcfb', dark: '#171715' };
+
+      function syncChrome(mode) {
+        if (tcLight && tcDark) {
+          var c = colors[mode] || null;
+          tcLight.content = c || '#fcfcfb';
+          tcDark.content  = c || '#171715';
+        }
+      }
+
+      if (saved === 'light' || saved === 'dark') {
+        root.setAttribute('data-theme', saved);
+        syncChrome(saved);
+      }
+
+      function wire() {
+        var btn = document.getElementById('theme');
+        if (!btn) return;
+
+        var state = document.getElementById('theme-state');
+
+        function paint(mode) {
+          if (mode) root.setAttribute('data-theme', mode);
+          else root.removeAttribute('data-theme');
+
+          if (state) state.textContent = btn.getAttribute('data-' + (mode || 'auto'));
+
+          syncChrome(mode);
+
+          try {
+            if (mode) localStorage.setItem(key, mode);
+            else localStorage.removeItem(key);
+          } catch (err) {}
+
+          
+          document.dispatchEvent(new CustomEvent('idyll:theme', { detail: mode || 'auto' }));
+        }
+
+        btn.addEventListener('click', function () {
+          var cur     = root.getAttribute('data-theme') || '';
+          var sysDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+          if (cur === '') paint(sysDark ? 'light' : 'dark');
+          else if (cur === 'light') paint('dark');
+          else paint('');
+        });
+
+        paint(root.getAttribute('data-theme') || '');
+      }
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', wire);
+      } else {
+        wire();
+      }
+    })();
+  </script>
+
+  <title>当规则成为战场的一部分：从《龙之家族》的儿童人盾谈战争中的博弈论 · 辣椒手记</title>
+  <meta name="description" content="当规则成为战场的一部分：从《龙之家族》的儿童人盾谈战争中的博弈论最近看《龙之家族》，有一个场景让我印象很深：面对进攻，守城方把大量孩子赶上城墙、城门，有些孩子甚至直接参与防守。 于是进攻方陷入了一个很恶心的局面：打，孩子会死，你会受到道德和舆论谴责；不打，守军就可以继续利用这些孩子保护军事目标，甚至…">
+  <meta name="author" content="辣椒小皇纸">
+  
+
+  <meta name="description" content="当规则成为战场的一部分：从《龙之家族》的儿童人盾谈战争中的博弈论最近看《龙之家族》，有一个场景让我印象很深：面对进攻，守城方把大量孩子赶上城墙、城门，有些孩子甚至直接参与防守。 于是进攻方陷入了一个很恶心的局面：打，孩子会死，你会受到道德和舆论谴责；不打，守军就可以继续利用这些孩子保护军事目标，甚至…">
+<meta property="og:type" content="article">
+<meta property="og:title" content="当规则成为战场的一部分：从《龙之家族》的儿童人盾谈战争中的博弈论 · 辣椒手记">
+<meta property="og:url" content="https://peppernotes.top/2026/09/game-theory-and-human-shields/index.html">
+<meta property="og:site_name" content="辣椒手记">
+<meta property="og:description" content="当规则成为战场的一部分：从《龙之家族》的儿童人盾谈战争中的博弈论最近看《龙之家族》，有一个场景让我印象很深：面对进攻，守城方把大量孩子赶上城墙、城门，有些孩子甚至直接参与防守。 于是进攻方陷入了一个很恶心的局面：打，孩子会死，你会受到道德和舆论谴责；不打，守军就可以继续利用这些孩子保护军事目标，甚至…">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2026-09-17T16:00:00.000Z">
+<meta property="article:modified_time" content="2026-09-17T16:00:00.000Z">
+<meta property="article:author" content="辣椒小皇纸">
+<meta property="article:tag" content="人盾">
+<meta property="article:tag" content="博弈论">
+<meta property="article:tag" content="战争">
+<meta property="article:tag" content="龙之家族">
+<meta name="twitter:card" content="summary">
+  
+  <link rel="canonical" href="https://peppernotes.top/2026/09/game-theory-and-human-shields/">
+  <link rel="icon" href="/images/favicon.svg" type="image/svg+xml">
+  
+
+  <link rel="stylesheet" href="/css/style.css">
+  
+
+<meta name="generator" content="Hexo 8.1.2"></head>
+
+<body data-idyll="copy anchor ext toc shortcut"
+      data-copy="复制"
+      data-copied="已复制"
+      data-copyfail="请按 Ctrl+C"
+      data-anchor="链接到这一节">
+
+  
+    <div class="progress" id="progress" aria-hidden="true"><i></i></div>
+  
+
+  <a class="skip" href="#main">跳到正文</a>
+
+  <header class="nav" id="nav">
+  <div class="wrap nav__in">
+    <a class="nav__brand" href="/">
+      <span class="nav__mark" aria-hidden="true"></span>
+      <span class="nav__name">辣椒手记</span>
+    </a>
+
+    <div class="nav__right">
+      <nav class="nav__links" aria-label="站点导航">
+        
+          <a class="nav__link"
+             href="/">首页</a>
+        
+          <a class="nav__link"
+             href="/archives/">归档</a>
+        
+          <a class="nav__link"
+             href="/categories/">分类</a>
+        
+          <a class="nav__link"
+             href="/tags/">标签</a>
+        
+          <a class="nav__link"
+             href="/series/">系列</a>
+        
+          <a class="nav__link"
+             href="/about/">关于</a>
+        
+      </nav>
+
+      
+        
+        <button class="theme" id="theme" type="button"
+                data-auto="跟随系统"
+                data-light="亮色"
+                data-dark="暗色">
+          <svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true" focusable="false">
+            <g class="theme__ico theme__ico--auto">
+              <circle cx="8" cy="8" r="5.6" fill="none" stroke="currentColor" stroke-width="1.4"/>
+              <path d="M8 2.4a5.6 5.6 0 0 0 0 11.2z" fill="currentColor"/>
+            </g>
+            <g class="theme__ico theme__ico--light"
+               fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round">
+              <circle cx="8" cy="8" r="3.1"/>
+              <path d="M8 1.3v1.3M8 13.4v1.3M14.7 8h-1.3M2.6 8H1.3M12.74 3.26l-.92.92M4.18 11.82l-.92.92M12.74 12.74l-.92-.92M4.18 4.18l-.92-.92"/>
+            </g>
+            <g class="theme__ico theme__ico--dark">
+              <path d="M14 8.53A6 6 0 1 1 7.47 2 4.67 4.67 0 0 0 14 8.53z"
+                    fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
+            </g>
+          </svg>
+          
+          <span class="sr-only" id="theme-state" aria-live="polite">跟随系统</span>
+        </button>
+      
+    </div>
+  </div>
+</header>
+
+
+  <main class="main" id="main">
+
+<article class="post">
+  <header class="wrap post__head">
+    
+      <p class="post__kicker">
+        <a href="/categories/%E6%80%9D%E8%80%83/">思考</a><span class="sep">/</span><a href="/categories/%E6%80%9D%E8%80%83/%E6%88%98%E4%BA%89%E4%B8%8E%E8%A7%84%E5%88%99/">战争与规则</a>
+      </p>
+    
+
+    <h1 class="post__title">当规则成为战场的一部分：从《龙之家族》的儿童人盾谈战争中的博弈论</h1>
+
+    <div class="post__meta">
+      
+      <time datetime="2026-09-17T16:00:00.000Z"><span class="sr-only">发布于 </span>2026-09-18</time>
+      
+        <span class="dot" aria-hidden="true">·</span>
+        <span>959 字</span>
+      
+      
+        <span class="dot" aria-hidden="true">·</span>
+        <span>3 分钟</span>
+      
+      
+    </div>
+  </header>
+
+  
+
+  <div class="wrap prose" id="content"><h1 id="当规则成为战场的一部分：从《龙之家族》的儿童人盾谈战争中的博弈论"><a href="#当规则成为战场的一部分：从《龙之家族》的儿童人盾谈战争中的博弈论" class="headerlink" title="当规则成为战场的一部分：从《龙之家族》的儿童人盾谈战争中的博弈论"></a>当规则成为战场的一部分：从《龙之家族》的儿童人盾谈战争中的博弈论</h1><p>最近看《龙之家族》，有一个场景让我印象很深：面对进攻，守城方把大量孩子赶上城墙、城门，有些孩子甚至直接参与防守。</p>
+<p>于是进攻方陷入了一个很恶心的局面：打，孩子会死，你会受到道德和舆论谴责；不打，守军就可以继续利用这些孩子保护军事目标，甚至让他们攻击你。</p>
+<p>表面上，这是一个“该不该攻击孩子”的伦理困境。但从博弈论来看，真正的问题其实是：<strong>有人把对手的道德底线变成了自己的军事资源。</strong></p>
+<p>如果对手根本不在乎平民伤亡，那么把孩子放在城墙上毫无意义。恰恰因为对方在乎平民、受到法律和舆论约束，孩子才产生了一种特殊的“防御力”。他们没有让城墙更加坚固，却让攻击城墙的代价变得更高。</p>
+<p>所以人盾战术真正的逻辑其实是：</p>
+<p><strong>“我知道你比我更在乎这些孩子，所以我要把他们放在这里。”</strong></p>
+<p>如果孩子自己又被武装起来，问题会更加残酷。他既可能是应该受到保护的儿童，也可能正在对你构成现实威胁。攻击方不得不判断：他到底是被迫站在那里的人盾，还是正在参与战斗的人？成年人把平民和战斗人员的界限人为模糊，实际上也增加了对手的信息成本和决策成本。</p>
+<p>因此，我觉得讨论这种问题时，不应该只问：“攻击这些孩子对不对？”</p>
+<p>更应该先问一句：</p>
+<p><strong>是谁把一个本来不应该成为军事目标的孩子，放进了敌人的军事决策之中？</strong></p>
+<p>这也涉及一个非常现实的规则问题。</p>
+<p>如果规定“只要军事目标旁边有儿童和平民，就绝对不能攻击”，结果反而可能非常糟糕。因为所有人都会发现：坦克前面放平民，坦克就安全；指挥所周围放平民，指挥所就安全；城门上站满孩子，城门也安全。</p>
+<p>这样看似是在保护平民，实际上却是在奖励使用人盾的人，最终只会让更多平民被推向战场。</p>
+<p>所以，**人盾不能成为军事目标的绝对免死金牌。**主动把儿童置于军事目标附近的一方，应当为制造这种危险承担责任；一个原本合法的军事目标，也不会因为有人故意把孩子放到前面，就自动变成绝对不可攻击。</p>
+<p>但反过来，这也不能变成攻击方“不管平民、随便攻击”的理由。攻击方仍然要尽可能减少平民伤亡，也仍然需要为自己的行为负责。</p>
+<p>这两点其实并不矛盾。</p>
+<p>一套合理的规则，既不能让守规则的人因为自己的克制而必然吃亏，也不能让违反规则的人通过利用别人的克制而稳赚不赔。</p>
+<p>所以《龙之家族》这个场景最残酷的地方，并不仅仅是孩子可能会死，而是成年人把孩子本身变成了一种武器。</p>
+<p>他们赌的不是城墙有多坚固，而是：</p>
+<p><strong>“我的敌人，会不会比我更在乎这些孩子？”</strong></p>
+<p>而一套真正合理的规则要做到的，就是不能让这种赌博成为一种稳赚不赔的战争策略。</p>
+<p><strong>让克制仍然值得坚持，也让利用别人克制的人付出代价。</strong></p>
+</div>
+
+  <footer class="wrap post__foot">
+    
+      <div class="post__tags">
+        <a class="pill pill--link" href="/tags/%E9%BE%99%E4%B9%8B%E5%AE%B6%E6%97%8F/">龙之家族</a><a class="pill pill--link" href="/tags/%E6%88%98%E4%BA%89/">战争</a><a class="pill pill--link" href="/tags/%E5%8D%9A%E5%BC%88%E8%AE%BA/">博弈论</a><a class="pill pill--link" href="/tags/%E4%BA%BA%E7%9B%BE/">人盾</a>
+      </div>
+    
+
+    
+
+    
+
+    
+      <nav class="nextprev" aria-label="归档">
+        <span></span>
+
+        
+          <a class="nextprev__card nextprev__card--r" href="/2026/09/why-anthropic-is-strong/" rel="next">
+            <span class="nextprev__label">下一篇 <span aria-hidden="true">→</span></span>
+            <span class="nextprev__title">Anthropic 为什么这么强？从 OpenAI 的一次核心团队出走说起</span>
+          </a>
+        
+      </nav>
+    
+  </footer>
+</article>
+
+
+
+
+
+</main>
+
+  
+<footer class="foot">
+  <div class="wrap foot__in">
+    <div class="foot__left">
+      
+      <p class="foot__copy">© 2026 辣椒小皇纸</p>
+    </div>
+
+    <div class="foot__right">
+      
+        <a class="foot__link" href="https://github.com/suhuang64" target="_blank" rel="noopener noreferrer">GitHub</a>
+      
+      
+    </div>
+  </div>
+</footer>
+
+
+  
+    <button class="totop" id="totop" type="button" aria-label="回到顶部">
+      <svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true" focusable="false">
+        <path d="M8 3.6l5.2 5.2-1.1 1.1L8.8 6.8V13h-1.6V6.8L3.9 9.9 2.8 8.8z" fill="currentColor"/>
+      </svg>
+    </button>
+  
+
+  
+    
+<div class="shortcuts" id="shortcuts" aria-hidden="true">
+  <p class="shortcuts__label">快捷键</p>
+  <ul class="shortcuts__list">
+    <li><kbd>Shift</kbd><span>+</span><kbd>T</kbd><span class="shortcuts__text">切换主题</span></li>
+    <li><kbd>Shift</kbd><span>+</span><kbd>H</kbd><span class="shortcuts__text">回到首页</span></li>
+    <li><kbd>Shift</kbd><span>+</span><kbd>R</kbd><span class="shortcuts__text">随机文章</span></li>
+  </ul>
+</div>
+
+  
+
+  
+    <script type="application/json" id="post-index">["/2019/09/linux-dst-server/","/2019/11/windows-dst-server/","/2019/11/diy-dst-cmd/","/2019/09/linux-screen/","/2019/11/dst-nickname/","/2020/02/dst-wx78/","/2020/03/aria2-h5ai/","/2020/05/github-action-hexo/","/2020/07/r-mice/","/2020/08/python-mail/","/2020/08/frp/","/2020/08/openvpn","/2023/08/sklearn-paramenter-tune/","/2020/09/sublime-text-date-time/","/2019/09/gitee-hexo/","/2023/08/sklearn-regression-algorithm/","/2026/08/compress-pdf-with-python/","/2026/08/han-tuo-zhou-shi-mi-yuan/","/2026/08/github-pull-request/","/2024/09/mongorestore/","/2026/09/why-anthropic-is-strong/","/2026/08/han-tu-zhou/","/2026/09/vscode-git-diff-contrast/","/2026/09/game-theory-and-human-shields/","/2019/09/ubuntu-sudo-no-password/"]</script>
+  
+
+  <script src="/js/main.js" defer></script>
+</body>
+</html>
